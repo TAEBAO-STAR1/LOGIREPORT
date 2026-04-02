@@ -892,8 +892,10 @@ strong.white{color:#fff;font-weight:900;font-size:clamp(1.3rem,2.2vw,1.8rem);let
         <span class="tag">반복 문의 제로화</span>
         <span class="tag">정보의 평등화</span>
         <span class="tag">지식의 자산화</span>
-  </div>
+      </div>
     </div>
+  </div>
+
   <div class="neuron-node dummy" id="nb1"></div>
   <div class="neuron-node dummy" id="nb2"></div>
 
@@ -944,9 +946,9 @@ function buildLayout(){
     nb1:{x:bCX-hw, y:midY},
     n8:{x:bCX-hw, y:botY},
     nb2:{x:bCX+hw*0.92, y:topY+(midY-topY)*0.32},
-    n9:{x:bCX+hw*0.88, y:midY+(botY-midY)*0.68},
+    n9:{x:bCX+hw*0.88, y:midY+(botY-midY)*0.45},
 
-    n10:{x:bCX+hw*2.2, y:midY+(botY-midY)*0.68},
+    n10:{x:bCX+hw*0.88, y:botY},
   };
 }
 
@@ -1599,7 +1601,11 @@ document.addEventListener('keydown',e=>{
 
   // phase C: n10 카드 열림
   if(activeNode && activeNode.id==='n10'){
-    if(fwd){ specialClosingTrigger(); return; }
+    if(fwd){
+      closeCard(activeNode); activeNode=null;
+      setTimeout(()=>{ specialClosingTrigger(); }, 550);
+      return;
+    }
     if(bwd){ navToNode(9); return; }
     return;
   }
@@ -1614,7 +1620,14 @@ document.addEventListener('keydown',e=>{
   if(activeNode){
     const cur = parseInt(activeNode.id.replace('n',''));
     if(fwd){
-      if(cur>=9) return; // 9번 이후는 DRB 오버레이 처리
+      if(cur===9){
+        closeCard(activeNode); activeNode=null;
+        setTimeout(()=>{
+          if(!drbCompleteShown && isDRBComplete()) showDRBComplete();
+          else navToNode(10);
+        }, 550);
+        return;
+      }
       navToNode(cur+1);
     } else if(bwd){
       if(cur>1) navToNode(cur-1);
