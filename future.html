@@ -270,10 +270,19 @@ strong.white{color:#fff;font-weight:900;font-size:clamp(1.3rem,2.2vw,1.8rem);let
 #reversal-banner.show{opacity:1;}
 #reversal-banner .rb-text{
   font-size:clamp(2.5rem,5vw,4.5rem);font-weight:900;letter-spacing:0.1em;
-  background:linear-gradient(135deg,#fff 0%,#00f2fe 60%,#4facfe 100%);
-  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
-  filter:drop-shadow(0 0 30px rgba(0,242,254,0.7));
   animation:rb-scale 1.4s cubic-bezier(0.2,0.8,0.2,1) forwards;
+}
+#reversal-banner .rb-text.past{
+  color:#00f2fe;
+  filter:drop-shadow(0 0 30px rgba(0,242,254,0.8));
+}
+#reversal-banner .rb-text.present{
+  color:#00f2fe;
+  filter:drop-shadow(0 0 30px rgba(0,242,254,0.8));
+}
+#reversal-banner .rb-text.future{
+  color:#c084fc;
+  filter:drop-shadow(0 0 30px rgba(192,132,252,0.8));
 }
 @keyframes rb-scale{0%{transform:scale(0.5);opacity:0;}40%{transform:scale(1.05);opacity:1;}100%{transform:scale(1);opacity:1;}}
 
@@ -1069,19 +1078,28 @@ function setTone(type){
 }
 
 /* ★ 4번 반전 연출 */
-function triggerReversal(){
-  // 배경 전환 (위기→해결)
-  setTone('resolve');
+let reversalBusy = false;
+function triggerReversal(text, tone){
+  if(reversalBusy) return;
+  reversalBusy = true;
+  setTimeout(()=>{ reversalBusy = false; }, 2600);
+
+  // 배경 전환
+  setTone(tone||'resolve');
 
   // 청록 플래시
   const rf=document.getElementById('reversal-flash');
   rf.style.animation='none';void rf.offsetWidth;
   rf.style.animation='reversal-anim 1.8s ease-out forwards';
 
-  // 배너 ("문제 → 해결")
+  // 배너 — 색상 클래스 적용
   const banner=document.getElementById('reversal-banner');
   const bannerText=banner.querySelector('.rb-text');
-  bannerText.textContent='문제 → 해결';
+  bannerText.textContent=text||'과거 → 현재';
+  bannerText.className='rb-text';
+  if(text==='과거 → 현재') bannerText.classList.add('past');
+  else if(text==='현재 → 미래') bannerText.classList.add('future');
+  else bannerText.classList.add('present');
   banner.classList.add('show');
   setTimeout(()=>{
     banner.style.transition='opacity 0.8s ease';
@@ -1133,7 +1151,8 @@ function toggleNode(num){
   triggerEdgeFlows(id);
 
   // ★ 4번 — 반전 연출
-  if(num===4){ setTimeout(triggerReversal, 200); playReversal(); }
+  if(num===4){ if(!reversalBusy){ setTimeout(()=>triggerReversal('과거 → 현재','resolve'), 200); playReversal(); } }
+  else if(num===7){ if(!reversalBusy){ setTimeout(()=>triggerReversal('현재 → 미래','future'), 200); playReversal(); } }
   else if([1,2,3].includes(num)){ setTone('crisis'); playTick('crisis'); }
   else if([7,8,9].includes(num)){ setTone('future'); playTick('future'); }
   else if(num===10){ setTone('default'); playTick('special'); }
@@ -1625,7 +1644,17 @@ document.addEventListener('keydown',e=>{
         }, 550);
         return;
       }
-      navToNode(cur+1);
+      if(cur === 3){
+        closeCard(activeNode); activeNode=null;
+        setTimeout(()=>triggerReversal('과거 → 현재','resolve'), 300);
+        setTimeout(()=>{ toggleNode(4); keySeq=5; }, 2500);
+      } else if(cur === 6){
+        closeCard(activeNode); activeNode=null;
+        setTimeout(()=>triggerReversal('현재 → 미래','future'), 300);
+        setTimeout(()=>{ toggleNode(7); keySeq=8; }, 2500);
+      } else {
+        navToNode(cur+1);
+      }
     } else if(bwd){
       if(cur>1) navToNode(cur-1);
     }
