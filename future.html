@@ -1802,7 +1802,468 @@ function ensureAudio(){
   if(!soundOn) startSound();
 }
 document.addEventListener('click',  ensureAudio, {once:true});
-document.addEventListener('keydown', ensureAudio, {once:true});
+
+/* ══════════════════════════════════════════════
+   🎤 발표자 모드 — BroadcastChannel 동기화
+   P 키: 발표자 창 열기
+   발표자 창은 노드 전환 시 자동 업데이트
+══════════════════════════════════════════════ */
+
+const PRESENTER_SCRIPTS = {
+  0: {
+    title: '도입',
+    phase: '🟡 도입',
+    script: `AI 전환을 이야기할 때 대부분 거창한 시스템을 먼저 떠올립니다.
+
+저희는 반대로 접근했습니다. 가장 작은 것, 가장 자주 반복되는 것부터.
+
+그 결과가 오늘 보여드릴 LOGIBOT입니다.`,
+    next: '01 · 구조 — 사람의 시간이 가장 비싼 자원',
+    tip: '천천히, 마지막 문장 후 1~2초 침묵'
+  },
+  1: {
+    title: '01 · 구조',
+    phase: '🔴 과거',
+    script: `조직에서 가장 비싼 자원은 시간이라고 생각합니다.
+
+그 시간이 매일 답이 정해진 질문에 소비되고 있었습니다.
+
+이것은 개인의 문제가 아니라 조직 구조의 문제입니다.`,
+    next: '02 · 종속 — 지식이 사람에 종속되면',
+    tip: '마지막 문장 강조해서 읽기'
+  },
+  2: {
+    title: '02 · 종속',
+    phase: '🔴 과거',
+    script: `물류 노하우가 엑셀, 메신저, 담당자 머릿속에만 존재합니다.
+
+지식이 사람에 종속된 조직은 그 사람이 떠나는 순간 취약해집니다.
+
+이건 물류팀만의 문제가 아닙니다.`,
+    next: '03 · 전환 — 두 가지 문제의 답은 하나',
+    tip: '마지막 문장 강조해서 읽기'
+  },
+  3: {
+    title: '03 · 전환',
+    phase: '🔴 과거 → 현재',
+    script: `사람 안에 갇힌 지식, 반복되는 시간의 낭비.
+
+두 가지 문제의 답은 "하나"였습니다.
+
+(침묵)
+
+지식을 시스템에 담는다면 어떻게 될까요?`,
+    next: '✦ 과거 → 현재 배너 → 04 · 질문',
+    tip: '침묵 후 마지막 문장 천천히 — 배너 뜰 때까지 기다리기'
+  },
+  4: {
+    title: '04 · 질문',
+    phase: '🔵 현재',
+    script: `사람이 아닌 시스템이 답하고
+
+누구든, 언제든, 즉시 접근할 수 있도록.
+
+DRB 물류 전용 인공지능 — LOGIBOT입니다.`,
+    next: '05 · 방식 — 질문하면 지식이 스스로 찾아옵니다',
+    tip: 'LOGIBOT 강조해서 읽기'
+  },
+  5: {
+    title: '05 · 방식',
+    phase: '🔵 현재',
+    script: `질문을 입력하면 물류 데이터 안에서
+
+가장 관련 높은 답을 즉시 찾아냅니다.
+
+즉, 담당자를 기다릴 필요가 없습니다.`,
+    next: '06 · 증거 — 지금 이 순간에도 쓰이고 있습니다',
+    tip: '"즉" 앞에서 잠깐 멈추기'
+  },
+  6: {
+    title: '06 · 증거',
+    phase: '🔵 현재 → 미래',
+    script: `국내영업, 해외영업팀에서 가장 자주 묻는 것들을 담았습니다.
+
+지금 이 순간에도 현업에서 실제로 쓰이고 있습니다.`,
+    next: '✦ 현재 → 미래 배너 → 07 · 변화',
+    tip: '배너 뜰 때까지 기다리기'
+  },
+  7: {
+    title: '07 · 변화',
+    phase: '🟣 미래',
+    script: `담당자만 알던 지식이 이제 모두의 지식이 됩니다.
+
+신입이든 베테랑이든 같은 정보에 동등하게 접근을 하고,
+
+담당자는 반복 응대 대신 더 중요한 판단에 집중합니다.`,
+    next: '08 · 미래 — 지식은 조직의 자산',
+    tip: '"모두의 지식" 강조'
+  },
+  8: {
+    title: '08 · 미래',
+    phase: '🟣 미래',
+    script: `한 번 쌓인 지식은 사라지지 않습니다.
+
+조직의 자산이 됩니다.
+
+2026년 혹은 장기 목표는 SAP와 그룹웨어가 연결되면 지식이 실시간으로 살아 움직입니다.`,
+    next: '09 · 가능성 — DRB가 일하는 방식이 달라집니다',
+    tip: '로드맵이니 자신감 있게'
+  },
+  9: {
+    title: '09 · 가능성',
+    phase: '🟣 미래',
+    script: `AI가 반복을 맡는 순간 사람은 판단·결정·관계에 집중합니다.
+
+이것이 단순한 도구의 도입이 아니라 일하는 방식이 달라지는 것입니다.
+
+그것이 진짜 변화라고 생각합니다.`,
+    next: '10 · 실현 — 시연',
+    tip: '"그것이 진짜 변화" 천천히, 힘 있게'
+  },
+  10: {
+    title: '10 · 실현 (시연)',
+    phase: '🟡 시연',
+    script: `말로 드리는 것보다 직접 실제로 동작하는 모습을 보여드리도록 하겠습니다.`,
+    next: '11 · 클로징 — 시연 스크립트 확인',
+    tip: '시연 시작 — 11번 클로징 탭에 시연 스크립트 있음'
+  },
+  11: {
+    title: '클로징 (시연 포함)',
+    phase: '🟡 시연 · 마무리',
+    steps: [
+      {
+        btn: '📦 시연 1 · 수출 포장 계산',
+        script: `첫 번째로 해외영업팀에서 자주 묻는 질문인 전동벨트 수출 포장에 대한 질문입니다.
+                    (답변이 나올때까지 기다리기)
+화면에서 보시는 것처럼 시뮬레이션 및 경우의 수, 계산 과정, 효율과 비효율의 판단, 요약까지 데이터들을 조합하여 세부적으로 답변을 도출했습니다.`,
+        tip: '결과 나오면 → 10초 침묵'
+      },
+      {
+        btn: '🚛 시연 2 · 차량 배차 추천',
+        script: `다음으로 국내영업팀에서 자주 묻는 질문인 효율적인 운송방식에 대한 질문입니다.
+                    (답변이 나올때까지 기다리기)
+화면에서 보시는 것처럼 자재코드와 수량만 입력하게 되면 해당 자재코드가 어떤 자재인지 구분하고 시뮬레이션을 돌려 최적의 운송 방식을 추천해줍니다.`,
+        tip: '결과 나오면 → 10초 침묵'
+      },
+      {
+        btn: '👤 시연 3 · 신입 온보딩',
+        script: `마지막으로 신입 온보딩입니다. 신입의 경우 어떤 질문을 해야 할지에 대한 어려움이 있습니다.
+
+로지봇은 물류에 대한 기본적인 질문을 가시성 있게 메인화면에 배치했고, 클릭만 하게 되면 답변이 나와서 편리함까지 있습니다.`,
+        tip: '시연 3 끝나면 아래 클로징 버튼 클릭'
+      },
+      {
+        btn: '🎤 클로징',
+        script: `이처럼 로지봇은 단순 계산이 아니라 요약과 추천까지 한 번에 정리해줍니다.
+
+매번 담당자에게 물어보던 질문이, 이제는 바로 해결됩니다.
+
+제가 드리고 싶었던 건 완성된 답이 아니라 작은 시도 하나였습니다.
+
+LOGIBOT은 단순한 챗봇이 아닙니다.
+
+모든 구성원이 전문가가 되는 순간 — 그것이 진짜 AX의 시작이라고 생각합니다.
+
+감사합니다.`,
+        tip: '마지막 문장 후 고개 숙이기'
+      }
+    ],
+    next: '— 발표 종료 —',
+    tip: '버튼 클릭으로 단계 이동'
+  }
+};
+
+/* BroadcastChannel 설정 */
+const presenterChannel = new BroadcastChannel('logibot_presenter');
+
+/* 발표자 창으로 현재 상태 전송 */
+function syncPresenter(nodeNum){
+  presenterChannel.postMessage({
+    type: 'NODE_CHANGE',
+    nodeNum: nodeNum,
+    elapsed: presenterTimer ? Math.floor((Date.now() - presenterStartTime) / 1000) : 0
+  });
+}
+
+/* toggleNode 후 동기화 — 기존 toggleNode 함수 래핑 */
+const _origToggleNode = toggleNode;
+// 아래 postMessage 훅은 toggleNode 내부에서 직접 호출
+
+/* 발표자 창 열기 */
+let presenterWin = null;
+let presenterTimer = null;
+let presenterStartTime = null;
+
+function openPresenterWindow(){
+  if(presenterWin && !presenterWin.closed){
+    presenterWin.focus();
+    return;
+  }
+  const w = 520, h = window.screen.height;
+  const left = window.screen.width - w;
+  presenterWin = window.open('', 'logibot_presenter',
+    `width=${w},height=${h},left=${left},top=0,resizable=yes,scrollbars=yes`);
+
+  if(!presenterWin){ alert('팝업이 차단됐습니다. 브라우저 팝업 허용 후 다시 시도해주세요.'); return; }
+
+  if(!presenterStartTime) presenterStartTime = Date.now();
+
+  const html = buildPresenterHTML();
+  presenterWin.document.open();
+  presenterWin.document.write(html);
+  presenterWin.document.close();
+
+  /* 현재 노드 즉시 동기화 */
+  const cur = activeNode ? parseInt(activeNode.id.replace('n','')) : 0;
+  setTimeout(()=>{ syncPresenter(cur); }, 300);
+}
+
+function buildPresenterHTML(){
+  return `<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>LOGIBOT — 발표자 모드</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:'Noto Sans KR','Apple SD Gothic Neo','Malgun Gothic',sans-serif;
+  background:#0d0f14;color:#e8eaf0;height:100vh;
+  display:flex;flex-direction:column;overflow:hidden;
+}
+.header{
+  background:#13161d;border-bottom:1px solid rgba(255,255,255,0.08);
+  padding:12px 20px;display:flex;align-items:center;justify-content:space-between;
+  flex-shrink:0;
+}
+.logo{font-size:11px;font-weight:700;color:#00f2fe;letter-spacing:3px;font-family:monospace}
+.timer{font-family:monospace;font-size:22px;font-weight:700;color:#f1c40f;letter-spacing:2px}
+.timer.warn{color:#ff6b6b;animation:blink 1s ease-in-out infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.4}}
+
+.body{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px}
+
+.phase-badge{
+  display:inline-block;font-size:11px;font-weight:700;padding:4px 12px;
+  border-radius:20px;letter-spacing:1px;margin-bottom:6px;
+}
+.phase-past  {background:rgba(255,107,107,0.12);color:#ff6b6b;border:1px solid rgba(255,107,107,0.3)}
+.phase-present{background:rgba(0,242,254,0.1);color:#00f2fe;border:1px solid rgba(0,242,254,0.3)}
+.phase-future{background:rgba(192,132,252,0.1);color:#c084fc;border:1px solid rgba(192,132,252,0.3)}
+.phase-demo  {background:rgba(241,196,15,0.1);color:#f1c40f;border:1px solid rgba(241,196,15,0.3)}
+
+.node-title{font-size:18px;font-weight:700;color:#fff;margin-bottom:12px;line-height:1.3}
+
+.section-label{
+  font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;
+  color:rgba(255,255,255,0.3);margin-bottom:6px;font-family:monospace;
+}
+
+.script-box{
+  background:#1a1e27;border:1px solid rgba(255,255,255,0.07);
+  border-radius:10px;padding:16px;
+  font-size:14px;line-height:2;color:#d0d8e8;
+  white-space:pre-wrap;word-break:keep-all;
+  border-left:3px solid #00f2fe;
+}
+
+.tip-box{
+  background:rgba(241,196,15,0.06);border:1px solid rgba(241,196,15,0.2);
+  border-radius:8px;padding:10px 14px;
+  font-size:12px;color:rgba(241,196,15,0.85);line-height:1.6;
+}
+.tip-box::before{content:'💡 ';font-size:12px}
+
+.next-box{
+  background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);
+  border-radius:8px;padding:10px 14px;
+  font-size:12px;color:rgba(255,255,255,0.45);
+}
+.next-box::before{content:'다음 → ';color:rgba(255,255,255,0.25);font-weight:700}
+
+.waiting{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:12px;color:rgba(255,255,255,0.2);
+}
+.waiting-icon{font-size:48px;opacity:0.3}
+.waiting-text{font-size:13px;letter-spacing:2px}
+
+.footer{
+  background:#13161d;border-top:1px solid rgba(255,255,255,0.08);
+  padding:10px 20px;display:flex;align-items:center;justify-content:space-between;
+  flex-shrink:0;
+}
+.shortcut{font-size:11px;color:rgba(255,255,255,0.25);letter-spacing:1px}
+.node-indicator{
+  display:flex;gap:5px;align-items:center;
+}
+.node-dot{
+  width:7px;height:7px;border-radius:50%;
+  background:rgba(255,255,255,0.15);transition:background 0.3s;
+}
+.node-dot.done{background:rgba(0,242,254,0.6)}
+.node-dot.active{background:#00f2fe;box-shadow:0 0 6px #00f2fe}
+</style>
+</head>
+<body>
+<div class="header">
+  <span class="logo">LOGIBOT · 발표자 모드</span>
+  <span class="timer" id="timer">00:00</span>
+</div>
+
+<div class="body" id="content">
+  <div class="waiting">
+    <div class="waiting-icon">🎤</div>
+    <div class="waiting-text">발표 화면과 연결 중...</div>
+  </div>
+</div>
+
+<div class="footer">
+  <span class="shortcut">발표 화면에서 노드 클릭 / 키보드로 조작하세요</span>
+  <div class="node-indicator" id="node-indicator">
+    ${Array.from({length:10},(_,i)=>`<div class="node-dot" id="pdot-${i+1}"></div>`).join('')}
+  </div>
+</div>
+
+<script>
+const ch = new BroadcastChannel('logibot_presenter');
+let startTime = null;
+let timerInterval = null;
+
+const SCRIPTS = ${JSON.stringify(PRESENTER_SCRIPTS)};
+
+function getPhaseClass(phase){
+  if(phase.includes('🔴')) return 'phase-past';
+  if(phase.includes('🔵')) return 'phase-present';
+  if(phase.includes('🟣')) return 'phase-future';
+  return 'phase-demo';
+}
+
+let currentStep = 0;
+
+function renderStep(data, stepIdx){
+  const step = data.steps[stepIdx];
+  const content = document.getElementById('content');
+  const isLast = stepIdx === data.steps.length - 1;
+
+  /* 버튼 목록 */
+  const btnHtml = data.steps.map((s, i) => \`
+    <button onclick="goStep(\${i})"
+      style="width:100%;text-align:left;padding:9px 14px;margin-bottom:6px;
+        border-radius:8px;border:1px solid \${i===stepIdx ? 'rgba(0,242,254,0.6)' : 'rgba(255,255,255,0.08)'};
+        background:\${i===stepIdx ? 'rgba(0,242,254,0.1)' : 'transparent'};
+        color:\${i===stepIdx ? '#00f2fe' : 'rgba(255,255,255,0.4)'};
+        font-size:13px;font-weight:\${i===stepIdx ? '700' : '400'};
+        cursor:pointer;font-family:inherit;transition:0.2s;">
+      \${i===stepIdx ? '▶ ' : ''}\${s.btn}
+    </button>
+  \`).join('');
+
+  content.innerHTML = \`
+    <span class="phase-badge \${getPhaseClass(data.phase)}">\${data.phase}</span>
+    <div class="node-title">\${data.title}</div>
+    <div class="section-label">시연 단계 선택</div>
+    \${btnHtml}
+    <div class="section-label" style="margin-top:12px">스크립트</div>
+    <div class="script-box">\${step.script}</div>
+    <div class="tip-box">\${step.tip}</div>
+    \${isLast ? '' : \`<div class="next-box">다음 → \${data.steps[stepIdx+1].btn}</div>\`}
+  \`;
+  content.scrollTop = 0;
+}
+
+function goStep(idx){
+  const data = SCRIPTS[11];
+  if(!data || !data.steps) return;
+  currentStep = idx;
+  renderStep(data, idx);
+}
+
+function render(nodeNum){
+  const data = SCRIPTS[nodeNum] || SCRIPTS[0];
+  const content = document.getElementById('content');
+
+  /* 11번 — 단계별 버튼 방식 */
+  if(nodeNum === 11 && data.steps){
+    currentStep = 0;
+    renderStep(data, 0);
+    /* 노드 인디케이터 */
+    for(let i=1;i<=10;i++){
+      const dot = document.getElementById('pdot-'+i);
+      if(!dot) continue;
+      dot.className='node-dot';
+      dot.classList.add('done');
+    }
+    return;
+  }
+
+  content.innerHTML = \`
+    <span class="phase-badge \${getPhaseClass(data.phase)}">\${data.phase}</span>
+    <div class="node-title">\${data.title}</div>
+    <div class="section-label">스크립트</div>
+    <div class="script-box">\${data.script}</div>
+    <div class="tip-box">\${data.tip}</div>
+    <div class="next-box">\${data.next}</div>
+  \`;
+  content.scrollTop = 0;
+
+  /* 노드 인디케이터 업데이트 */
+  for(let i=1;i<=10;i++){
+    const dot = document.getElementById('pdot-'+i);
+    if(!dot) continue;
+    dot.className = 'node-dot';
+    if(i < nodeNum) dot.classList.add('done');
+    else if(i === nodeNum) dot.classList.add('active');
+  }
+}
+
+function startTimer(){
+  if(timerInterval) return;
+  startTime = Date.now();
+  timerInterval = setInterval(()=>{
+    const elapsed = Math.floor((Date.now()-startTime)/1000);
+    const m = String(Math.floor(elapsed/60)).padStart(2,'0');
+    const s = String(elapsed%60).padStart(2,'0');
+    const t = document.getElementById('timer');
+    t.textContent = m+':'+s;
+    t.className = 'timer' + (elapsed >= 240 ? ' warn' : '');
+  }, 1000);
+}
+
+ch.onmessage = (e)=>{
+  if(e.data.type === 'NODE_CHANGE'){
+    if(!timerInterval) startTimer();
+    render(e.data.nodeNum);
+  }
+};
+<\/script>
+</body>
+</html>`;
+}
+
+/* P 키로 발표자 창 열기 */
+document.addEventListener('keydown', e => {
+  if(e.key === 'p' || e.key === 'P'){
+    openPresenterWindow();
+  }
+});
+
+/* toggleNode 호출 시 자동 동기화 */
+const _origToggle = window.toggleNode;
+window.toggleNode = function(num){
+  _origToggle(num);
+  setTimeout(()=>{ syncPresenter(num); }, 100);
+};
+
+/* 클로징 단계 동기화 */
+const _origClosing = window.specialClosingTrigger;
+if(_origClosing){
+  window.specialClosingTrigger = function(){
+    _origClosing();
+    setTimeout(()=>{ syncPresenter(11); }, 100);
+  };
+}
+
 </script>
 </body>
 </html>
