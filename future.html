@@ -122,9 +122,9 @@ html,body{
   box-shadow:none;
 }
 
-/* 라벨 */
+/* 라벨 — 위치는 applyLayout()이 JS로 동적 제어 */
 .node-info{
-  position:absolute;left:36px;
+  position:absolute;
   display:flex;flex-direction:column;white-space:nowrap;pointer-events:none;
 }
 .dummy .node-info{display:none;}
@@ -139,13 +139,21 @@ html,body{
   text-transform:uppercase;font-weight:600;
 }
 
-/* 활성 배지 — 카드 상단 */
+/* 활성 배지 — 카드 상단 중앙 고정
+   JS 인라인 스타일보다 CSS가 우선하도록 openCard()에서 style 초기화 후 class로 제어 */
 .neuron-node.active .node-info{
-  position:absolute;
-  left:50%!important;top:-24px!important;
-  transform:translateX(-50%)!important;
-  white-space:nowrap;
-  display:flex;flex-direction:row;align-items:center;gap:10px;
+  /* JS 인라인 스타일을 openCard에서 reset한 뒤 이 CSS가 적용됨 */
+  position:absolute !important;
+  left:50% !important;
+  right:auto !important;
+  top:-28px !important;
+  transform:translateX(-50%) !important;
+  white-space:nowrap !important;
+  display:flex !important;
+  flex-direction:row !important;
+  align-items:center !important;
+  gap:10px !important;
+  text-align:left !important;
   pointer-events:none;z-index:300;
   background:rgba(2,10,14,0.96);
   border:1px solid currentColor;
@@ -199,7 +207,7 @@ html,body{
   background:rgba(255,80,80,0.1)!important;border-color:rgba(255,124,124,0.55)!important;}
 
 /* ── 현재 n2~n5 — 청록 세포 군집 ── */
-#n2,#n3,#n4,#n5{border-color:var(--primary);width:28px;height:28px;
+#n2,#n3,#n4,#n5{border-color:var(--primary);
   box-shadow:0 0 8px rgba(62,255,216,0.2);}
 #n2::after,#n3::after,#n4::after,#n5::after{
   background:rgba(62,255,216,0.55);box-shadow:0 0 8px rgba(62,255,216,0.9);}
@@ -222,7 +230,7 @@ html,body{
   background:rgba(179,136,255,0.08)!important;border-color:rgba(179,136,255,0.5)!important;}
 
 /* ── 미래 n6~n7 — 연보라 세포 ── */
-#n6,#n7{border-color:var(--future);width:28px;height:28px;
+#n6,#n7{border-color:var(--future);
   box-shadow:0 0 8px rgba(179,136,255,0.18);}
 #n6::after,#n7::after{
   background:rgba(179,136,255,0.5);box-shadow:0 0 8px rgba(160,100,255,0.9);}
@@ -235,19 +243,19 @@ html,body{
 #n6.active .node-info,#n7.active .node-info{border-color:var(--future);color:var(--future);}
 
 /* ── 실현 n8 — 황금 세포 ── */
-#n8{border-color:var(--special);width:30px;height:30px;
-  box-shadow:0 0 10px rgba(255,224,102,0.22);}
-#n8::after{background:rgba(255,224,102,0.55);box-shadow:0 0 10px rgba(255,200,0,0.9);}
+#n8{border-color:var(--special);
+  box-shadow:0 0 8px rgba(255,224,102,0.2);}
+#n8::after{background:rgba(255,224,102,0.55);box-shadow:0 0 6px rgba(255,200,0,0.9);}
 #n8.visited:not(.active){
   background:radial-gradient(circle at 38% 35%,rgba(255,224,102,0.2) 0%,#0f0a00 100%);
-  box-shadow:0 0 18px rgba(255,200,0,0.28);}
+  box-shadow:0 0 14px rgba(255,200,0,0.26);}
 #n8 .node-num{color:var(--special);}
 #n8.active{border-color:var(--special)!important;}
 #n8.active .node-num{color:var(--special);}
 #n8.active .node-info{border-color:var(--special);color:var(--special);}
-#n8 .node-info{left:38px;top:50%;transform:translateY(-50%);align-items:flex-start;}
-#n8 .node-num{font-size:clamp(1.1rem,1.6vw,1.5rem);}
-#n8 .node-key{font-size:clamp(0.55rem,0.8vw,0.74rem);}
+
+
+
 
 /* ── 카드 h1 그라디언트 ── */
 #n1 .node-content h1{
@@ -1053,67 +1061,86 @@ strong.white{color:#d8fff8;font-weight:900;font-size:clamp(1.3rem,2.2vw,1.8rem);
 /* ══════════════════════════════════════
    레이아웃
 ══════════════════════════════════════ */
+/* ── 뫼비우스(∞) 레이아웃 헬퍼 ──
+   Lemniscate of Bernoulli:
+   x = cx + rx·cos(t)/(1+sin²(t))
+   y = cy + ry·sin(t)·cos(t)/(1+sin²(t))
+   t=0   → 우측 최외점 (실현 n8)
+   t=π   → 좌측 최외점 (과거 n1)
+   좌 루프: t ∈ [π/2, π] + [-π, -π/2]
+   우 루프: t ∈ [-π/2, 0] + [0, π/2]         */
+function mobiusPoint(t, cx, cy, rx, ry){
+  const s = Math.sin(t), s2 = s*s;
+  const denom = 1 + s2;
+  return {
+    x: cx + rx * Math.cos(t) / denom,
+    y: cy + ry * s * Math.cos(t) / denom,
+  };
+}
+
 function buildLayout(){
   const W=window.innerWidth, H=window.innerHeight;
-  const midY = H * 0.50;
+  const cx = W * 0.50, cy = H * 0.50;
+  const rx = W * 0.36, ry = H * 0.30;
+  const PI = Math.PI;
+  const p = (t) => mobiusPoint(t, cx, cy, rx, ry);
 
-  /* ── 수평 레이아웃: 왼쪽(과거) → 오른쪽(실현) ──
-     과거 1개  |  현재 4개 (상하 분기)  |  미래 2개  |  실현 1개
-     비율:  13%     28~52%                  70%          88%        */
-
-  const xP  = W * 0.13;   // 과거 n1
-  const xC1 = W * 0.30;   // 현재 상단줄기
-  const xC2 = W * 0.42;   // 현재 n2/n4
-  const xC3 = W * 0.52;   // 현재 n3/n5
-  const xF  = W * 0.68;   // 미래 n6/n7
-  const xFd = W * 0.60;   // 미래 더미줄기
-  const xE  = W * 0.88;   // 실현 n8
-
-  const spread = H * 0.20; // 상하 벌어짐
-
+  /* ── ∞ 배치 t값 ──
+     좌 루프(과거·현재): n1=π(좌끝) → n2=0.85π(좌상) → n3=0.65π → 교차 → n4=-0.65π → n5=-0.85π(좌하)
+     우 루프(미래·실현): n6=-0.2π(우상) → n8=0(우끝) → n7=0.2π(우하)
+  */
   return {
-    // 과거
-    n1 : {x: xP,   y: midY},
-
-    // 과거→현재 더미 줄기 (뿌리가 뻗어나가는 느낌)
-    nd1: {x: xC1,  y: midY - spread * 0.5},
-    nd2: {x: xC1,  y: midY + spread * 0.5},
-    nd3: {x: xC1,  y: midY - spread * 1.1},
-    nd4: {x: xC1,  y: midY + spread * 1.1},
-
-    // 현재 — 4개 노드
-    n2 : {x: xC2,  y: midY - spread * 1.15},
-    n3 : {x: xC3,  y: midY - spread * 0.45},
-    n4 : {x: xC3,  y: midY + spread * 0.45},
-    n5 : {x: xC2,  y: midY + spread * 1.15},
-
-    // 현재→미래 더미 줄기
-    nb1: {x: xFd,  y: midY - spread * 0.5},
-    nb2: {x: xFd,  y: midY + spread * 0.5},
-
-    // 미래 — 2개 노드
-    n6 : {x: xF,   y: midY - spread * 0.65},
-    n7 : {x: xF,   y: midY + spread * 0.65},
-
-    // 실현
-    n8 : {x: xE,   y: midY},
+    n1 : p(PI),           // 과거  — 좌측 최외점
+    nd1: p(PI*0.925),     // 줄기  — n1↔n2
+    nd3: p(PI*0.75),      // 줄기  — n2↔n3
+    nd2: p(PI*-0.925),    // 줄기  — n5↔n1(하단 귀환)
+    nd4: p(PI*-0.75),     // 줄기  — n4↔n5
+    n2 : p(PI*0.85),      // 현재② — 좌 상단
+    n3 : p(PI*0.65),      // 현재③ — 좌→교차
+    n4 : p(PI*-0.65),     // 현재④ — 교차→좌하
+    n5 : p(PI*-0.85),     // 현재⑤ — 좌 하단
+    nb1: p(PI*-0.10),     // 줄기  — n6→실현 사이 (우 상단)
+    nb2: p(PI*0.10),      // 줄기  — n7→실현 사이 (우 하단)
+    n6 : p(PI*-0.35),     // 미래⑥ — 우 상단 (실현과 분리)
+    n7 : p(PI*0.35),      // 미래⑦ — 우 하단 (실현과 분리)
+    n8 : p(0),            // 실현  — 우측 최외점(∞ 끝)
   };
 }
 
 const ALL_IDS=['n1','nd1','nd2','nd3','nd4','n2','n3','n4','n5','nb1','nb2','n6','n7','n8'];
 
-/* 선 정의 — 뉴런 뿌리 구조 */
-// 과거 → 현재 더미 줄기 (n1에서 4방향으로 뻗기)
-const D_EDGES=[['n1','nd1'],['n1','nd2'],['n1','nd3'],['n1','nd4']];
-// 더미 → 현재 노드 (뿌리 → 잎)
-const R_EDGES=[
-  ['nd3','n2'],['nd1','n3'],['nd2','n4'],['nd4','n5'],
-  ['n3','n4']  // 현재 내부 연결
+/* ── 선 정의 — ∞ 궤도 흐름 ──
+   흐름: n1(좌끝) → nd1 → n2 → nd3 → n3 → [교차] → n8(우끝) → n6 → nb1 → n3
+                                                       ↘ n4 → nd4 → n5 → nd2 → n1(귀환)
+*/
+// D: 과거 → 현재 상단 루프 (좌 루프 상반)
+const D_EDGES=[
+  ['n1','nd1'],   // 과거 → 줄기
+  ['nd1','n2'],   // 줄기 → 현재②
+  ['n2','nd3'],   // 현재② → 줄기
+  ['nd3','n3'],   // 줄기 → 현재③
 ];
-// 현재 → 미래 더미 줄기
-const B_EDGES=[['n3','nb1'],['n4','nb2'],['nb1','n6'],['nb2','n7']];
-// 미래 → 실현 브릿지
-const DRB_BRIDGE=[['n6','n8'],['n7','n8']];
+// R: 교차점(n8) 통과 → 현재 하단 루프 → 과거 귀환
+const R_EDGES=[
+  ['n3','n8'],    // 현재③ → 실현(교차)
+  ['n8','n4'],    // 실현 → 현재④
+  ['n4','nd4'],   // 현재④ → 줄기
+  ['nd4','n5'],   // 줄기 → 현재⑤
+  ['n5','nd2'],   // 현재⑤ → 줄기
+  ['nd2','n1'],   // 줄기 → 과거 (∞ 귀환)
+];
+// B: 교차점 → 미래 우측 루프
+const B_EDGES=[
+  ['n8','nb1'],   // 실현 → 미래 상단 줄기
+  ['nb1','n6'],   // 줄기 → 미래⑥
+  ['n8','nb2'],   // 실현 → 미래 하단 줄기
+  ['nb2','n7'],   // 줄기 → 미래⑦
+];
+// 미래 → 실현 수렴 (우 루프 완결)
+const DRB_BRIDGE=[
+  ['n6','n8'],    // 미래⑥ → 실현
+  ['n7','n8'],    // 미래⑦ → 실현
+];
 
 /* 그룹 맵 — D=과거, R=현재, B=미래, S=실현 */
 const LETTER_MAP={D:['n1'],R:['n2','n3','n4','n5'],B:['n6','n7'],S:['n8']};
@@ -1136,17 +1163,59 @@ const NUM_TO_ID={1:'n1',2:'n2',3:'n3',4:'n4',5:'n5',6:'n6',7:'n7',8:'n8'};
 function numToId(n){return NUM_TO_ID[n];}
 function idToNum(id){return parseInt(Object.entries(NUM_TO_ID).find(([,v])=>v===id)?.[0]);}
 
+/* 노드 실제 크기 맵 (offsetWidth 타이밍 문제 회피) */
+const NODE_SIZE={
+  n1:26, n2:26, n3:26, n4:26, n5:26,
+  n6:26, n7:26, n8:26,
+  nd1:10,nd2:10,nd3:10,nd4:10,nb1:10,nb2:10,
+};
+
 function applyLayout(){
   const pos=buildLayout();
+  const W=window.innerWidth, H=window.innerHeight;
+  const cx=W*0.50, cy=H*0.50;
+
   ALL_IDS.forEach(id=>{
     const el=document.getElementById(id); if(!el)return;
-    const p=pos[id];
-    const w=el.offsetWidth||24, h=el.offsetHeight||24;
-    el.dataset.origLeft=(p.x-w/2)+'px';
-    el.dataset.origTop =(p.y-h/2)+'px';
+    const p=pos[id]; if(!p)return;
+    const sz=NODE_SIZE[id]||24;
+
+    // 중심 좌표 기준으로 left/top 계산
+    el.dataset.origLeft=(p.x - sz/2)+'px';
+    el.dataset.origTop =(p.y - sz/2)+'px';
     if(!el.classList.contains('active')){
       el.style.left=el.dataset.origLeft;
       el.style.top =el.dataset.origTop;
+    }
+
+    // ── 라벨 방향: 중심(cx,cy)에서 노드 바깥 방향 ──
+    const ni=el.querySelector('.node-info');
+    if(!ni||el.classList.contains('dummy')) return;
+
+    const dx=p.x-cx, dy=p.y-cy;
+    const angle=Math.atan2(dy,dx)*180/Math.PI;
+    const offset=(sz+10)+'px';
+
+    ni.style.position='absolute';
+    ni.style.top='50%';
+    ni.style.transform='translateY(-50%)';
+    ni.style.display='flex';
+    ni.style.flexDirection='column';
+    ni.style.whiteSpace='nowrap';
+    ni.style.pointerEvents='none';
+
+    if(angle>-90 && angle<90){
+      // 오른쪽 반구 → 라벨 오른쪽
+      ni.style.left=offset;
+      ni.style.right='';
+      ni.style.alignItems='flex-start';
+      ni.style.textAlign='left';
+    } else {
+      // 왼쪽 반구 → 라벨 왼쪽
+      ni.style.right=offset;
+      ni.style.left='';
+      ni.style.alignItems='flex-end';
+      ni.style.textAlign='right';
     }
   });
 }
@@ -1181,6 +1250,9 @@ function openCard(el){
   el.style.width='24px';el.style.height='24px';
   el.style.borderRadius='50%';
   el.classList.add('active');
+  /* ── 배지 인라인 스타일 초기화: CSS .active .node-info 가 완전히 제어하도록 ── */
+  var ni=el.querySelector('.node-info');
+  if(ni){ ni.removeAttribute('style'); }
   requestAnimationFrame(()=>requestAnimationFrame(()=>{
     el.style.transition=[
       'left 0.7s cubic-bezier(0.2,0.85,0.2,1)',
@@ -1214,6 +1286,8 @@ function closeCard(el){
   setTimeout(()=>{
     el.classList.remove('active');
     el.style.transition='';
+    /* 라벨 위치 복원 — applyLayout이 JS 인라인 스타일을 재적용 */
+    applyLayout();
     if(el.id==='n7' && isDRBComplete() && !drbCompleteShown){
       setTimeout(()=>showDRBComplete(), 300);
     }
@@ -1267,14 +1341,9 @@ function triggerReversal(text, tone){
 
 /* 엣지 흐름 */
 function triggerEdgeFlows(nodeId){
-  [...D_EDGES,...R_EDGES,...B_EDGES,...DRB_BRIDGE].forEach(([a,b])=>{
-    if((a===nodeId||b===nodeId)&&isVisited(a)&&isVisited(b)){
-      const key=`${a}->${b}`;
-      if(!flowingEdges.has(key)||!flowingEdges.get(key).done){
-        flowingEdges.set(key,{progress:0,done:false,startTime:performance.now()});
-      }
-    }
-  });
+  // 궤도 기반 렌더링 — 개별 엣지 흐름 대신 스파크 속도를 일시 가속
+  ORBIT_SPARKS.forEach(function(s){ s.speed=0.014; });
+  setTimeout(function(){ ORBIT_SPARKS.forEach(function(s){ s.speed=0.008; }); },1200);
 }
 
 /* 다음 힌트 */
@@ -1587,115 +1656,217 @@ function resizeNeuralCanvas(){
 resizeNeuralCanvas();
 window.addEventListener('resize',resizeNeuralCanvas);
 
+/* ══════════════════════════════════════════
+   ∞ 단일 연속 궤도 렌더러
+   - 노드 방문 상태에 따라 궤도를 컬러 구간으로 그라디언트 렌더
+   - 모든 선이 하나의 부드러운 렘니스케이트 위에 존재
+══════════════════════════════════════════ */
+
+/* ∞ 궤도 위의 한 점 */
+function lemnPt(t){
+  const W=canvas.width,H=canvas.height;
+  const cx=W*0.50,cy=H*0.50,rx=W*0.36,ry=H*0.30;
+  const s=Math.sin(t),s2=s*s,d=1+s2;
+  return {x:cx+rx*Math.cos(t)/d, y:cy+ry*s*Math.cos(t)/d};
+}
+
+/* 궤도 위 t1→t2 구간을 부드럽게 그리기 */
+function drawOrbitSegment(t1,t2,color,shadow,lw,blur,steps){
+  steps=steps||80;
+  ctx.save();
+  ctx.beginPath();
+  for(let i=0;i<=steps;i++){
+    const t=t1+(t2-t1)*(i/steps);
+    const p=lemnPt(t);
+    i===0?ctx.moveTo(p.x,p.y):ctx.lineTo(p.x,p.y);
+  }
+  ctx.strokeStyle=color;
+  ctx.lineWidth=lw;
+  ctx.lineJoin='round';
+  ctx.lineCap='round';
+  ctx.shadowColor=shadow;
+  ctx.shadowBlur=blur;
+  ctx.stroke();
+  ctx.restore();
+}
+
+/* 미방문 기본 궤도 (전체 ∞, 희미한 점선) */
+function drawOrbitBase(){
+  const W=canvas.width,H=canvas.height;
+  const cx=W*0.50,cy=H*0.50,rx=W*0.36,ry=H*0.30;
+  const alpha=(0.055+0.025*Math.sin(drbGlowPhase*0.5)).toFixed(3);
+  ctx.save();
+  ctx.beginPath();
+  const STEPS=360;
+  for(let i=0;i<=STEPS;i++){
+    const t=(i/STEPS)*Math.PI*2-Math.PI;
+    const s=Math.sin(t),s2=s*s,d=1+s2;
+    const x=cx+rx*Math.cos(t)/d, y=cy+ry*s*Math.cos(t)/d;
+    i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+  }
+  ctx.closePath();
+  ctx.setLineDash([4,14]);
+  ctx.lineDashOffset=-(drbGlowPhase*9%18);
+  ctx.strokeStyle='rgba(62,255,216,'+alpha+')';
+  ctx.lineWidth=0.9;
+  ctx.shadowBlur=0;
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.restore();
+}
+
+/* 각 단계별 t 범위 정의 (buildLayout t값과 동기화) */
+const PI=Math.PI;
+const ORBIT_SEGMENTS=[
+  // 좌 루프 상단: 과거(t=π) → 현재②③
+  {t1:PI,       t2:PI*0.65,  letter:'D', rev:false},
+  // 좌 루프 → 교차 → 하단: 현재③ → 실현(0) → 현재④⑤ → 과거(-π)
+  {t1:PI*0.65,  t2:0,        letter:'R', rev:false},
+  {t1:0,        t2:-PI,      letter:'R', rev:false},
+  // 우 루프: 실현(0) ↔ 미래⑥(-0.35π)
+  {t1:0,        t2:-PI*0.35, letter:'B', rev:false},
+  // 우 루프 하반: 미래⑦(0.35π) → 실현(0)
+  {t1:PI*0.35,  t2:0,        letter:'B', rev:false},
+];
+
+function drawMobiusOrbit(){
+  /* 1. 전체 기본 궤도 (항상 표시) */
+  drawOrbitBase();
+
+  /* 2. 방문된 구간을 컬러로 덮어씌우기 */
+  const glow=0.55+0.45*Math.sin(drbGlowPhase);
+
+  ORBIT_SEGMENTS.forEach(function(seg){
+    const col=LETTER_COLORS[seg.letter];
+    const complete=isLetterComplete(seg.letter);
+    const anyVis=LETTER_ALL[seg.letter].some(function(id){return isVisited(id);});
+    if(!anyVis) return;
+
+    var alpha, lw, blur;
+    if(complete){
+      alpha=(0.65+0.28*glow).toFixed(2);
+      lw=2.8; blur=16+10*glow;
+    } else {
+      alpha='0.55'; lw=2.2; blur=10;
+    }
+    const color=col.stroke.replace('0.9',alpha);
+    const shadow=col.shadow.replace('0.7',(0.4+0.3*glow).toFixed(2));
+    drawOrbitSegment(seg.t1,seg.t2,color,shadow,lw,blur,120);
+  });
+
+  /* 3. 실현(n8) 교차점 마커 */
+  const crossPt=lemnPt(0);
+  const ca=(0.12+0.1*Math.sin(drbGlowPhase*1.3)).toFixed(3);
+  ctx.save();
+  ctx.beginPath();ctx.arc(crossPt.x,crossPt.y,4.5,0,PI*2);
+  ctx.fillStyle='rgba(255,224,102,'+ca+')';
+  ctx.shadowColor='rgba(255,200,0,0.6)';ctx.shadowBlur=14;
+  ctx.fill();ctx.restore();
+
+  /* 4. 과거(n1) 마커 */
+  const pastPt=lemnPt(PI);
+  const pa=(0.1+0.07*Math.sin(drbGlowPhase*0.9)).toFixed(3);
+  ctx.save();
+  ctx.beginPath();ctx.arc(pastPt.x,pastPt.y,3.5,0,PI*2);
+  ctx.fillStyle='rgba(255,120,120,'+pa+')';
+  ctx.shadowColor='rgba(255,80,80,0.45)';ctx.shadowBlur=10;
+  ctx.fill();ctx.restore();
+
+  /* 5. 완성 시 — ∞ 전체 발광 */
+  if(isDRBComplete()){
+    const fa=(0.35+0.25*Math.sin(drbGlowPhase*0.8)).toFixed(3);
+    drawOrbitSegment(-PI,PI,'rgba(255,224,102,'+fa+')','rgba(255,200,0,0.3)',1.2,8,360);
+  }
+}
+
+/* ── ∞ 궤도 위 빛점 (신호 흐름 표현) ── */
+const ORBIT_SPARKS=[
+  {tOffset:0,      speed:0.008, color:'rgba(62,255,216,',  size:3.5},
+  {tOffset:Math.PI,speed:0.008, color:'rgba(179,136,255,', size:2.8},
+  {tOffset:Math.PI*0.5,speed:0.006, color:'rgba(255,200,0,', size:2.2},
+];
+let sparkT=0;
+
+function drawOrbitSparks(){
+  sparkT+=0.012;
+  ORBIT_SPARKS.forEach(function(spark,i){
+    // 방문된 구간에만 빛점 표시
+    const anyVisited=visitedSequence.length>0;
+    if(!anyVisited) return;
+
+    const t=((sparkT*spark.speed*80+spark.tOffset)%(Math.PI*2))-Math.PI;
+    const pt=lemnPt(t);
+    const pulse=0.6+0.4*Math.sin(sparkT*3+i*2.1);
+    const alpha=(0.7+0.3*pulse).toFixed(2);
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(pt.x,pt.y,spark.size*pulse,0,Math.PI*2);
+    ctx.fillStyle=spark.color+alpha+')';
+    ctx.shadowColor=spark.color+'0.8)';
+    ctx.shadowBlur=spark.size*5*pulse;
+    ctx.fill();
+    ctx.restore();
+
+    // 꼬리 효과 — 3점
+    for(let j=1;j<=3;j++){
+      const dt=0.06*j;
+      const tprev=t-dt*(spark.speed>0.007?1:-1);
+      const pp=lemnPt(tprev);
+      const ta=(0.25-j*0.07).toFixed(2);
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(pp.x,pp.y,spark.size*(1-j*0.25)*pulse,0,Math.PI*2);
+      ctx.fillStyle=spark.color+ta+')';
+      ctx.shadowBlur=0;
+      ctx.fill();
+      ctx.restore();
+    }
+  });
+}
+
 function drawLines(){
   ctx.clearRect(0,0,canvas.width,canvas.height);
   drbGlowPhase+=0.018;
-  const now=performance.now();
 
-  /* ─── 엣지 그룹별 유기 곡선 렌더링 ─── */
-  const EDGE_GROUPS=[
-    {edges:D_EDGES, letter:'D'},
-    {edges:R_EDGES, letter:'R'},
-    {edges:B_EDGES, letter:'B'},
-  ];
+  /* ── 1. ∞ 연속 궤도 (방문 상태 반영) ── */
+  drawMobiusOrbit();
+  drawOrbitSparks();
 
-  EDGE_GROUPS.forEach(({edges,letter})=>{
-    const col=LETTER_COLORS[letter];
-    const complete=isLetterComplete(letter);
-    edges.forEach(([a,b])=>{
-      const ca=getCenter(a),cb=getCenter(b);
-      const vA=isVisited(a),vB=isVisited(b);
-
-      if(!vA||!vB){
-        /* 미방문 — 잠든 수상돌기: 점선 베지어 */
-        ctx.save();
-        ctx.setLineDash([3,10]);
-        drawCurve(ca.x,ca.y,cb.x,cb.y,
-          'rgba(62,255,216,0.04)','transparent',0.8,0,0.22);
-        ctx.setLineDash([]);
-        ctx.restore();
-        return;
-      }
-
-      const key=`${a}->${b}`;
-      const flow=flowingEdges.get(key);
-
-      if(flow&&!flow.done){
-        /* 성장 애니메이션 — 신경 신호 전파 */
-        const t=Math.min(1,(now-flow.startTime)/FLOW_DUR);
-        const ease=1-Math.pow(1-t,3);
-        drawPartialCurve(ca.x,ca.y,cb.x,cb.y,ease,col.stroke,col.shadow,2.8,14);
-        if(t>=1) flow.done=true;
-      } else {
-        if(complete){
-          /* 완성된 뉴런 — 발광 곡선 + 세포체 글로우 */
-          const p=0.55+0.45*Math.sin(drbGlowPhase);
-          const gs=col.stroke.replace('0.9',(0.65+0.3*p).toFixed(2));
-          const gh=col.shadow.replace('0.7',(0.45+0.4*p).toFixed(2));
-          drawCurve(ca.x,ca.y,cb.x,cb.y,gs,gh,3.2,18+12*p,0.28);
-          drawNodeGlow(ca.x,ca.y,col.stroke,26+9*p);
-          drawNodeGlow(cb.x,cb.y,col.stroke,26+9*p);
-        } else {
-          /* 활성 수상돌기 — 일반 발광 곡선 */
-          drawCurve(ca.x,ca.y,cb.x,cb.y,col.stroke,col.shadow,2.2,10,0.28);
-        }
-      }
-    });
-  });
-
-  /* ─── 실현 브릿지 — 황금 신호선 ─── */
-  if(isDRBComplete()){
-    const p=0.5+0.5*Math.sin(drbGlowPhase*1.2);
-    const bridgeAlpha=(0.4+0.38*p).toFixed(2);
-    const bridgeShadow=(0.3+0.28*p).toFixed(2);
-    DRB_BRIDGE.forEach(([a,b])=>{
-      const ca=getCenter(a),cb=getCenter(b);
-      /* 황금 곡선 — 반대 방향 곡률로 자연스럽게 */
-      ctx.save();
-      ctx.setLineDash([6,4]);
-      drawCurve(ca.x,ca.y,cb.x,cb.y,
-        `rgba(255,224,102,${bridgeAlpha})`,
-        `rgba(255,200,0,${bridgeShadow})`,
-        2,12+7*p, -0.18);
-      ctx.setLineDash([]);
-      ctx.restore();
-    });
-    if(!document.getElementById('drb-complete-overlay').classList.contains('show')){
-      const cx=canvas.width/2, cy=canvas.height-44;
-      ctx.font=`700 ${Math.round(canvas.width*0.018)}px sans-serif`;
-      ctx.textAlign='center';
-      const fa=(0.45+0.4*Math.sin(drbGlowPhase*0.85)).toFixed(2);
-      ctx.fillStyle=`rgba(255,224,102,${fa})`;
-      ctx.shadowColor='rgba(255,200,0,0.7)';ctx.shadowBlur=18;
-      ctx.fillText('✦  과거 · 현재 · 미래 · 실현  ✦',cx,cy);
-      ctx.shadowBlur=0;
-    }
+  /* ── 2. 완성 시 중앙 텍스트 ── */
+  if(isDRBComplete()&&!document.getElementById('drb-complete-overlay').classList.contains('show')){
+    const mcx=canvas.width*0.50, mcy=canvas.height*0.50+canvas.height*0.11;
+    ctx.font='700 '+Math.round(canvas.width*0.015)+'px sans-serif';
+    ctx.textAlign='center';
+    const fa=(0.5+0.38*Math.sin(drbGlowPhase*0.85)).toFixed(2);
+    ctx.fillStyle='rgba(255,224,102,'+fa+')';
+    ctx.shadowColor='rgba(255,200,0,0.8)';ctx.shadowBlur=20;
+    ctx.fillText('∞  과거 · 현재 · 미래 · 실현  ∞',mcx,mcy);
+    ctx.shadowBlur=0;
   }
 
-  /* ─── 단계 레이블 ─── */
-  const fs=Math.max(11,Math.round(canvas.width*0.013));
+  /* ─── 단계 레이블 — 뫼비우스 각 루프 중심에 고정 배치 ─── */
+  const W2=canvas.width, H2=canvas.height;
+  const lcx=W2*0.50, lcy=H2*0.50;
+  const lrx=W2*0.36, lry=H2*0.30;
+  const fs=Math.max(11,Math.round(W2*0.013));
   ctx.font=`600 ${fs}px sans-serif`;
-  ctx.textAlign='center';
 
-  const LABELS=[
-    {letter:'D',label:'과거',ids:LETTER_ALL.D},
-    {letter:'R',label:'현재',ids:LETTER_ALL.R},
-    {letter:'B',label:'미래',ids:LETTER_ALL.B},
-    {letter:'S',label:'실현',ids:LETTER_ALL.S},
+  // 각 단계 레이블의 고정 위치 (∞ 궤도 내 대표 좌표)
+  const FIXED_LABELS=[
+    {letter:'D', label:'과거', tx:-lrx*0.60, ty:-lry*0.50},  // 좌측 루프 상단
+    {letter:'R', label:'현재', tx:-lrx*0.20, ty:0},           // 좌측 루프 중앙
+    {letter:'B', label:'미래', tx: lrx*0.10, ty:-lry*0.52},   // 우측 루프 상단
+    {letter:'S', label:'실현', tx: lrx*0.50, ty: lry*0.40},   // 우측 최외점 하단
   ];
-  LABELS.forEach(({letter,label,ids})=>{
+
+  FIXED_LABELS.forEach(({letter,label,tx,ty})=>{
     const col=LETTER_COLORS[letter];
-    let minY=Infinity,sumX=0,cnt=0;
-    ids.forEach(id=>{
-      const cc=getCenter(id);
-      if(cc.x===0&&cc.y===0)return;
-      if(cc.y<minY)minY=cc.y; sumX+=cc.x; cnt++;
-    });
-    if(cnt===0)return;
-    const lx=sumX/cnt, ly=minY-32;
-    const vis=ids.some(id=>isVisited(id));
+    const lx=lcx+tx, ly=lcy+ty;
+    const vis=LETTER_ALL[letter].some(id=>isVisited(id));
     const comp=isLetterComplete(letter);
     const p=0.6+0.4*Math.sin(drbGlowPhase);
+    ctx.textAlign='center';
     if(comp){
       ctx.fillStyle=col.stroke.replace('0.9',(0.85+0.12*p).toFixed(2));
       ctx.shadowColor=col.shadow;ctx.shadowBlur=16+10*p;
@@ -1703,7 +1874,7 @@ function drawLines(){
       ctx.fillStyle=col.stroke.replace('0.9','0.5');
       ctx.shadowColor=col.shadow.replace('0.7','0.25');ctx.shadowBlur=6;
     }else{
-      ctx.fillStyle='rgba(62,255,216,0.1)';ctx.shadowBlur=0;
+      ctx.fillStyle=col.stroke.replace('0.9','0.12');ctx.shadowBlur=0;
     }
     ctx.fillText(label,lx,ly);
     ctx.shadowBlur=0;
@@ -1736,8 +1907,19 @@ drawLines();
     cells.length=0;
     const count=Math.floor((W*H)/55000)+8;
     for(let i=0;i<count;i++){
+      // ∞ 궤도 주변에 집중 분포 (70%) + 완전 랜덤 (30%)
+      let cx2,cy2;
+      if(Math.random()<0.70){
+        const t=(Math.random()-0.5)*Math.PI*2;
+        const s=Math.sin(t),s2=s*s,d=1+s2;
+        const rx2=W*0.36,ry2=H*0.30;
+        cx2=W*0.5+rx2*Math.cos(t)/d+(Math.random()-0.5)*W*0.18;
+        cy2=H*0.5+ry2*s*Math.cos(t)/d+(Math.random()-0.5)*H*0.18;
+      } else {
+        cx2=Math.random()*W; cy2=Math.random()*H;
+      }
       cells.push({
-        x:Math.random()*W, y:Math.random()*H,
+        x:cx2, y:cy2,
         rx: 40+Math.random()*90,
         ry: 25+Math.random()*55,
         rot: Math.random()*Math.PI,
@@ -2002,7 +2184,19 @@ document.getElementById('drb-complete-overlay').addEventListener('click',()=>{
 });
 
 /* 초기화 */
-window.addEventListener('load',()=>{applyLayout();updateNextHint(0);});
+/* 레이아웃 초기화 — rAF 이중 보장으로 offsetWidth 타이밍 문제 해결 */
+function initLayout(){
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    applyLayout();
+    updateNextHint(0);
+  }));
+}
+if(document.readyState==='loading'){
+  document.addEventListener('DOMContentLoaded', initLayout);
+} else {
+  initLayout();
+}
+window.addEventListener('load', initLayout);
 window.addEventListener('resize',applyLayout);
 
 /* 키보드 힌트 (상시 표시, 희미) */
