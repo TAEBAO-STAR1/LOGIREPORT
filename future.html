@@ -7,47 +7,26 @@
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  /* 심해 발광 팔레트 */
-  --primary:#3effd8;       /* 청록 발광 — 현재 */
-  --crisis:#ff7c7c;        /* 산호 빨강 — 과거 */
-  --future:#b388ff;        /* 연보라 — 미래 */
-  --special:#ffe066;       /* 황금 — 실현 */
-  --card-bg:rgba(2,10,14,0.97);
-
-  /* 배경 심층 컬러 */
-  --deep-bg:#020c0f;
-  --cell-glow:rgba(62,255,216,0.06);
-  --membrane:#0d2f2a;
+  --primary:#00f2fe;--special:#f1c40f;--crisis:#ff6b6b;--future:#c084fc;
+  --card-bg:rgba(3,8,20,0.99);
 }
-html,body{
-  width:100%;height:100%;overflow:hidden;
-  background:var(--deep-bg);color:#d8f0ec;
-  font-family:'Pretendard','Apple SD Gothic Neo','Malgun Gothic',sans-serif;
-}
+html,body{width:100%;height:100%;overflow:hidden;background:#00030a;color:#fff;
+  font-family:'Pretendard','Apple SD Gothic Neo','Malgun Gothic',sans-serif;}
 
 #particle-canvas,#neural-canvas{position:fixed;inset:0;pointer-events:none;}
-#particle-canvas{z-index:0;}  /* 세포막 배경 */
-#neural-canvas{z-index:1;}    /* 뉴런 연결선 */
+#particle-canvas{z-index:0;}
+#neural-canvas{z-index:1;}
 
 /* 분위기 오버레이 */
-#tone-overlay{position:fixed;inset:0;z-index:2;pointer-events:none;opacity:0;transition:all 2.5s ease;}
-#tone-overlay.crisis{
-  background:radial-gradient(ellipse at 20% 50%,rgba(255,80,80,0.18) 0%,transparent 60%);
-  opacity:1;
-}
-#tone-overlay.resolve{
-  background:radial-gradient(ellipse at 50% 50%,rgba(62,255,216,0.1) 0%,transparent 65%);
-  opacity:1;
-}
-#tone-overlay.future{
-  background:radial-gradient(ellipse at 80% 50%,rgba(179,136,255,0.15) 0%,transparent 60%);
-  opacity:1;
-}
+#tone-overlay{position:fixed;inset:0;z-index:2;pointer-events:none;opacity:0;transition:all 2s ease;}
+#tone-overlay.crisis{background:radial-gradient(ellipse at 50% 85%,rgba(200,20,20,0.35) 0%,transparent 65%);opacity:1;}
+#tone-overlay.resolve{background:radial-gradient(ellipse at 50% 15%,rgba(0,180,220,0.2) 0%,transparent 60%);opacity:1;}
+#tone-overlay.future{background:radial-gradient(ellipse at 50% 50%,rgba(192,132,252,0.18) 0%,transparent 65%);opacity:1;}
 
 /* 반전 플래시 — 3→4 서사 전환용 */
 #reversal-flash{
   position:fixed;inset:0;z-index:450;pointer-events:none;opacity:0;
-  background:radial-gradient(circle at 50% 50%,rgba(62,255,216,0.14) 0%,transparent 70%);
+  background:radial-gradient(circle at 50% 50%,rgba(0,242,254,0.18) 0%,transparent 70%);
 }
 @keyframes reversal-anim{0%{opacity:0;}15%{opacity:1;}100%{opacity:0;}}
 
@@ -62,267 +41,138 @@ html,body{
 }
 #main-title .word{
   font-size:clamp(1.9rem,3.6vw,3.1rem);font-weight:900;letter-spacing:0.35em;
-  background:linear-gradient(135deg,#a8ffee 0%,#3effd8 45%,#7fffda 100%);
+  background:linear-gradient(135deg,#fff 0%,#00f2fe 55%,#4facfe 100%);
   -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
-  filter:drop-shadow(0 0 28px rgba(62,255,216,0.55));line-height:1;
+  filter:drop-shadow(0 0 20px rgba(0,242,254,0.5));line-height:1;
 }
 #main-title .sub{
-  font-size:clamp(0.52rem,0.82vw,0.7rem);letter-spacing:0.42em;
-  color:rgba(62,255,216,0.45);
+  font-size:clamp(0.52rem,0.82vw,0.7rem);letter-spacing:0.42em;color:rgba(0,242,254,0.5);
   text-transform:uppercase;margin-top:5px;display:block;
 }
 #main-title::after{
   content:'';display:block;width:60%;height:1px;margin:8px auto 0;
-  background:linear-gradient(to right,transparent,rgba(62,255,216,0.3),transparent);
+  background:linear-gradient(to right,transparent,rgba(0,242,254,0.4),transparent);
 }
 
 /* 리셋 버튼 */
 .back-btn{
   position:fixed;top:22px;left:22px;z-index:2000;padding:8px 20px;
-  border:1px solid rgba(62,255,216,0.5);background:rgba(62,255,216,0.06);color:var(--primary);
+  border:1px solid var(--primary);background:rgba(0,242,254,0.08);color:var(--primary);
   border-radius:30px;cursor:pointer;font-size:0.8rem;font-weight:700;
   backdrop-filter:blur(10px);transition:0.3s;
 }
-.back-btn:hover{background:rgba(62,255,216,0.15);color:var(--primary);box-shadow:0 0 16px rgba(62,255,216,0.4);}
+.back-btn:hover{background:var(--primary);color:#000;box-shadow:0 0 14px var(--primary);}
 
-/* ═══════════════════════════════
-   뉴런 노드 — 세포체 스타일
-═══════════════════════════════ */
+/* ═══════════ 노드 ═══════════ */
 .neuron-node{
-  position:absolute;
-  /* 세포체: 원형, 3겹 구조 */
-  width:26px;height:26px;border-radius:50%;
-  background:radial-gradient(circle at 38% 35%,#0d2e2a 0%,#040e0c 100%);
-  border:1.5px solid var(--primary);
-  z-index:10;cursor:pointer;
-  display:flex;align-items:center;overflow:visible;
-  /* 발광 효과 */
-  box-shadow:0 0 8px rgba(62,255,216,0.25),inset 0 0 6px rgba(62,255,216,0.08);
-  transition:box-shadow 0.5s ease,background 0.5s ease,border-color 0.5s ease;
-}
-/* 세포 핵 — ::after 로 내부 발광점 */
-.neuron-node::after{
-  content:'';position:absolute;
-  width:7px;height:7px;border-radius:50%;
-  top:50%;left:50%;transform:translate(-50%,-50%);
-  background:rgba(62,255,216,0.55);
-  box-shadow:0 0 6px rgba(62,255,216,0.8);
-  pointer-events:none;transition:background 0.5s,box-shadow 0.5s;
+  position:absolute;width:24px;height:24px;
+  background:#0a1828;border:2px solid var(--primary);border-radius:50%;
+  z-index:10;cursor:pointer;display:flex;align-items:center;overflow:visible;
+  transition:box-shadow 0.4s ease,background 0.4s ease,border-color 0.4s ease;
 }
 .neuron-node.dummy{
-  width:10px;height:10px;
-  background:rgba(10,28,24,0.6);
-  border-width:1px;opacity:0.35;
-  cursor:default;pointer-events:none;
-  box-shadow:none;
+  width:16px;height:16px;background:rgba(20,40,55,0.8);
+  border-width:1.5px;opacity:0.6;cursor:default;pointer-events:none;
 }
-.neuron-node.dummy::after{
-  width:3px;height:3px;
-  background:rgba(62,255,216,0.3);
-  box-shadow:none;
-}
-
-/* 라벨 — 위치는 applyLayout()이 JS로 동적 제어 */
 .node-info{
-  position:absolute;
+  position:absolute;left:34px;
   display:flex;flex-direction:column;white-space:nowrap;pointer-events:none;
 }
 .dummy .node-info{display:none;}
+
+/* ★ 라벨 크기 키움 — 프로젝터 대응 */
 .node-num{
   font-weight:900;color:var(--primary);
-  font-size:clamp(1.4rem,2vw,2rem);line-height:1;
+  font-size:clamp(1.5rem,2.2vw,2.1rem);line-height:1;
 }
 .node-key{
-  font-size:clamp(0.65rem,0.95vw,0.88rem);
-  color:rgba(200,240,235,0.6);
-  letter-spacing:2.5px;margin-top:3px;
-  text-transform:uppercase;font-weight:600;
+  font-size:clamp(0.68rem,1vw,0.92rem);color:rgba(255,255,255,0.72);
+  letter-spacing:2.5px;margin-top:4px;text-transform:uppercase;font-weight:600;
 }
 
-/* 활성 배지 — 카드 상단 중앙 고정
-   JS 인라인 스타일보다 CSS가 우선하도록 openCard()에서 style 초기화 후 class로 제어 */
+/* 활성 카드 번호 배지 — 카드 테두리 상단에 걸침, 가독성 폰트 */
 .neuron-node.active .node-info{
-  /* JS 인라인 스타일을 openCard에서 reset한 뒤 이 CSS가 적용됨 */
-  position:absolute !important;
-  left:50% !important;
-  right:auto !important;
-  top:-28px !important;
-  transform:translateX(-50%) !important;
-  white-space:nowrap !important;
-  display:flex !important;
-  flex-direction:row !important;
-  align-items:center !important;
-  gap:10px !important;
-  text-align:left !important;
+  position:absolute;
+  left:50%!important;top:-22px!important;
+  transform:translateX(-50%)!important;
+  white-space:nowrap;
+  display:flex;flex-direction:row;align-items:center;gap:10px;
   pointer-events:none;z-index:300;
-  background:rgba(2,10,14,0.96);
-  border:1px solid currentColor;
+  background:rgba(3,8,20,0.97);
+  border:1.5px solid currentColor;
   border-radius:40px;
-  padding:5px 20px 5px 14px;
-  backdrop-filter:blur(16px);
+  padding:6px 22px 6px 16px;
+  backdrop-filter:blur(14px);
 }
-.neuron-node.active .node-num{font-size:1.5rem;font-weight:900;line-height:1;}
+.neuron-node.active .node-num{
+  font-size:1.6rem;font-weight:900;line-height:1;letter-spacing:-0.01em;
+}
 .neuron-node.active .node-key{
-  font-size:0.85rem;letter-spacing:3px;font-weight:700;
-  color:rgba(200,240,235,0.6);text-transform:uppercase;margin-top:0;
+  font-size:0.88rem;letter-spacing:3px;font-weight:700;
+  color:rgba(255,255,255,0.65);text-transform:uppercase;margin-top:0;
 }
+/* 배지 테두리/글씨 색상 — 그룹별 */
+#n1.active .node-info{border-color:var(--crisis);color:var(--crisis);}
+#n2.active .node-info,#n3.active .node-info,
+#n4.active .node-info,#n5.active .node-info{border-color:var(--primary);color:var(--primary);}
+#n6.active .node-info,#n7.active .node-info{border-color:var(--future);color:var(--future);}
+#n8.active .node-info{border-color:var(--special);color:var(--special);}
 
-/* visited — 방문된 노드: 세포가 활성화된 느낌 */
-.neuron-node.visited:not(.active){
-  background:radial-gradient(circle at 38% 35%,rgba(62,255,216,0.18) 0%,#040e0c 100%);
-}
-.neuron-node.visited:not(.active) .node-num{color:#e0fff8;}
-.neuron-node.visited:not(.active) .node-key{color:rgba(200,240,235,0.8);}
+/* visited */
+.neuron-node.visited:not(.active) .node-num{color:#fff;}
+.neuron-node.visited:not(.active) .node-key{color:rgba(255,255,255,0.88);}
 
 /* 활성 카드 */
 .neuron-node.active{
-  border-radius:22px;z-index:100;cursor:default;
-  border-width:1px;overflow:visible;
+  border-radius:26px;z-index:100;cursor:default;border-width:1.5px;overflow:visible;
 }
 .neuron-node.active::before{
-  content:'';position:absolute;inset:0;border-radius:22px;
-  background:rgba(2,10,14,0.97);z-index:0;
-  backdrop-filter:blur(36px);-webkit-backdrop-filter:blur(36px);
+  content:'';position:absolute;inset:0;border-radius:26px;
+  background:rgba(3,8,20,0.995);z-index:0;backdrop-filter:blur(32px);
+  -webkit-backdrop-filter:blur(32px);
 }
-.neuron-node.active::after{display:none;} /* 핵 발광점 숨김 */
 .neuron-node.active .node-content{overflow:hidden;position:relative;z-index:1;}
 
-/* ═══════════════════════════════════════
-   색상 테마 — 심해 발광 세포체
-═══════════════════════════════════════ */
-
-/* ── 과거 n1 — 산호 적색 세포 ── */
-#n1{border-color:var(--crisis);box-shadow:0 0 8px rgba(255,124,124,0.2);}
-#n1::after{background:rgba(255,100,100,0.5);box-shadow:0 0 8px rgba(255,80,80,0.9);}
-#n1.visited:not(.active){
-  background:radial-gradient(circle at 38% 35%,rgba(255,100,100,0.18) 0%,#0e0505 100%);
-  box-shadow:0 0 14px rgba(255,100,100,0.28);}
+/* 색상 테마 */
+/* ── 과거 n1 (위기/빨강) ── */
+#n1{border-color:var(--crisis);}
+#n1.visited{background:var(--crisis)!important;box-shadow:0 0 22px var(--crisis);}
 #n1 .node-num{color:var(--crisis);}
 #n1.active{border-color:var(--crisis)!important;}
 #n1.active .node-num{color:var(--crisis);}
-#n1.active .node-info{border-color:var(--crisis);color:var(--crisis);}
-#nd1,#nd2,#nd3,#nd4{border-color:rgba(255,124,124,0.35);}
-#nd1::after,#nd2::after,#nd3::after,#nd4::after{background:rgba(255,100,100,0.2);box-shadow:none;}
-#nd1.visited,#nd2.visited,#nd3.visited,#nd4.visited{
-  background:rgba(255,80,80,0.1)!important;border-color:rgba(255,124,124,0.55)!important;}
+#nd1,#nd2{border-color:var(--crisis);}
+#nd1.visited,#nd2.visited{background:var(--crisis)!important;box-shadow:0 0 10px var(--crisis);}
 
-/* ── 현재 n2~n5 — 청록 세포 군집 ── */
-#n2,#n3,#n4,#n5{border-color:var(--primary);
-  box-shadow:0 0 8px rgba(62,255,216,0.2);}
-#n2::after,#n3::after,#n4::after,#n5::after{
-  background:rgba(62,255,216,0.55);box-shadow:0 0 8px rgba(62,255,216,0.9);}
-#n2.visited:not(.active),#n3.visited:not(.active),
-#n4.visited:not(.active),#n5.visited:not(.active){
-  background:radial-gradient(circle at 38% 35%,rgba(62,255,216,0.18) 0%,#030f0d 100%);
-  box-shadow:0 0 16px rgba(62,255,216,0.28);}
+/* ── 현재 n2~n5 (청록) ── */
+#n2,#n3,#n4,#n5{border-color:var(--primary);width:28px;height:28px;}
+#n2.visited,#n3.visited,#n4.visited,#n5.visited{background:var(--primary)!important;box-shadow:0 0 22px var(--primary);}
 #n2 .node-num,#n3 .node-num,#n4 .node-num,#n5 .node-num{color:var(--primary);}
 #n2.active,#n3.active,#n4.active,#n5.active{border-color:var(--primary)!important;}
 #n2.active .node-num,#n3.active .node-num,#n4.active .node-num,#n5.active .node-num{color:var(--primary);}
-#n2.active .node-info,#n3.active .node-info,
-#n4.active .node-info,#n5.active .node-info{border-color:var(--primary);color:var(--primary);}
 #n2.visited:not(.active) .node-num,#n3.visited:not(.active) .node-num,
-#n4.visited:not(.active) .node-num,#n5.visited:not(.active) .node-num{color:#b8fff2;}
+#n4.visited:not(.active) .node-num,#n5.visited:not(.active) .node-num{color:#fff;}
+#nr1,#nr2{border-color:var(--primary);}
+#nr1.visited,#nr2.visited{background:var(--primary)!important;box-shadow:0 0 10px var(--primary);}
 
-/* ── 더미 줄기 ── */
-#nb1,#nb2{border-color:rgba(179,136,255,0.35);}
-#nb1::after,#nb2::after{background:rgba(179,136,255,0.2);box-shadow:none;}
-#nb1.visited,#nb2.visited{
-  background:rgba(179,136,255,0.08)!important;border-color:rgba(179,136,255,0.5)!important;}
-
-/* ── 미래 n6~n7 — 연보라 세포 ── */
-#n6,#n7{border-color:var(--future);
-  box-shadow:0 0 8px rgba(179,136,255,0.18);}
-#n6::after,#n7::after{
-  background:rgba(179,136,255,0.5);box-shadow:0 0 8px rgba(160,100,255,0.9);}
-#n6.visited:not(.active),#n7.visited:not(.active){
-  background:radial-gradient(circle at 38% 35%,rgba(179,136,255,0.18) 0%,#0a0514 100%);
-  box-shadow:0 0 14px rgba(179,136,255,0.24);}
+/* ── 미래 n6~n7 (보라) ── */
+#n6,#n7{border-color:var(--future);width:28px;height:28px;}
+#n6.visited,#n7.visited{background:var(--future)!important;box-shadow:0 0 22px var(--future);}
 #n6 .node-num,#n7 .node-num{color:var(--future);}
 #n6.active,#n7.active{border-color:var(--future)!important;}
 #n6.active .node-num,#n7.active .node-num{color:var(--future);}
-#n6.active .node-info,#n7.active .node-info{border-color:var(--future);color:var(--future);}
+#nb1,#nb2{border-color:var(--future);}
+#nb1.visited,#nb2.visited{background:var(--future)!important;box-shadow:0 0 10px var(--future);}
 
-/* ── 실현 n8 — 황금 세포 ── */
-#n8{border-color:var(--special);
-  box-shadow:0 0 8px rgba(255,224,102,0.2);}
-#n8::after{background:rgba(255,224,102,0.55);box-shadow:0 0 6px rgba(255,200,0,0.9);}
-#n8.visited:not(.active){
-  background:radial-gradient(circle at 38% 35%,rgba(255,224,102,0.2) 0%,#0f0a00 100%);
-  box-shadow:0 0 14px rgba(255,200,0,0.26);}
+/* ── 실현 n8 (금색) ── */
+#n8{border-color:var(--special);width:30px;height:30px;}
+#n8.visited{background:var(--special)!important;box-shadow:0 0 26px var(--special);}
 #n8 .node-num{color:var(--special);}
 #n8.active{border-color:var(--special)!important;}
 #n8.active .node-num{color:var(--special);}
-#n8.active .node-info{border-color:var(--special);color:var(--special);}
-
-
-
-
-/* ── 카드 h1 그라디언트 ── */
-#n1 .node-content h1{
-  background:linear-gradient(135deg,#ffe8e8 0%,#ff9a9a 100%);
-  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
-#n6 .node-content h1,#n7 .node-content h1{
-  background:linear-gradient(135deg,#f0e8ff 0%,#c4a0ff 100%);
-  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
-#n8 .node-content h1{
-  background:linear-gradient(135deg,#fffbe0 0%,#ffe066 100%);
-  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
-
-/* ── 태그 ── */
-#n1 .tag{border-color:rgba(255,124,124,0.38);color:#ffaaaa;background:rgba(255,80,80,0.06);}
-#n6 .tag,#n7 .tag{border-color:rgba(179,136,255,0.38);color:#d4b4ff;background:rgba(160,100,255,0.06);}
-#n8 .tag{border-color:rgba(255,224,102,0.38);color:#ffe999;background:rgba(255,200,0,0.05);}
-
-/* ── divider ── */
-#n1 .divider{background:linear-gradient(to right,transparent,var(--crisis),transparent);}
-#n6 .divider,#n7 .divider{background:linear-gradient(to right,transparent,var(--future),transparent);}
-#n8 .divider{background:linear-gradient(to right,transparent,var(--special),transparent);}
-
-/* ── 단락 색상 ── */
-#n1 .node-content p{color:rgba(255,220,220,0.9);}
-#n6 .node-content p,#n7 .node-content p{color:rgba(230,218,255,0.9);}
-
-/* ── glow hint ── */
-@keyframes glow-crisis{0%,100%{box-shadow:0 0 8px rgba(255,124,124,0.2);}
-  50%{box-shadow:0 0 22px 8px rgba(255,80,80,0.5),0 0 40px 18px rgba(255,80,80,0.12);}}
-@keyframes glow-primary{0%,100%{box-shadow:0 0 8px rgba(62,255,216,0.2);}
-  50%{box-shadow:0 0 22px 8px rgba(62,255,216,0.55),0 0 40px 18px rgba(62,255,216,0.12);}}
-@keyframes glow-future{0%,100%{box-shadow:0 0 8px rgba(179,136,255,0.2);}
-  50%{box-shadow:0 0 22px 8px rgba(160,100,255,0.55),0 0 40px 18px rgba(160,100,255,0.12);}}
-@keyframes glow-special{0%,100%{box-shadow:0 0 8px rgba(255,224,102,0.2);}
-  50%{box-shadow:0 0 22px 8px rgba(255,200,0,0.55),0 0 40px 18px rgba(255,200,0,0.12);}}
-#n1.next-hint{animation:glow-crisis 1.6s ease-in-out infinite;}
-#n2.next-hint,#n3.next-hint,#n4.next-hint,#n5.next-hint{animation:glow-primary 1.6s ease-in-out infinite;}
-#n6.next-hint,#n7.next-hint{animation:glow-future 1.6s ease-in-out infinite;}
-#n8.next-hint{animation:glow-special 1.6s ease-in-out infinite;}
-
-/* ── 사이클 다이어그램 ── */
-.cycle-diagram{
-  display:flex;align-items:center;justify-content:center;flex-wrap:wrap;
-  gap:4px;margin:clamp(10px,1.6vh,18px) 0;
-}
-.cycle-item{
-  display:flex;flex-direction:column;align-items:center;gap:4px;
-  padding:10px 14px;border-radius:14px;
-  border:1px solid rgba(62,255,216,0.22);
-  background:rgba(62,255,216,0.05);
-  font-size:clamp(0.68rem,1vw,0.82rem);color:rgba(62,255,216,0.85);
-  font-weight:600;letter-spacing:0.5px;min-width:72px;
-  transition:0.35s;
-}
-.cycle-item .c-icon{font-size:1.2rem;}
-.cycle-arrow{font-size:1rem;color:rgba(62,255,216,0.35);font-weight:700;padding:0 2px;}
-.cycle-back{width:100%;text-align:center;font-size:0.85rem;color:rgba(62,255,216,0.25);margin-top:-2px;}
-@keyframes cycle-pulse{
-  0%,100%{border-color:rgba(62,255,216,0.2);background:rgba(62,255,216,0.04);}
-  50%{border-color:rgba(62,255,216,0.55);background:rgba(62,255,216,0.12);
-      box-shadow:0 0 10px rgba(62,255,216,0.2);}
-}
-#n5.active .cycle-item{animation:cycle-pulse 2.4s ease-in-out infinite;}
-#n5.active .cycle-item.c1{animation-delay:0s;}
-#n5.active .cycle-item.c2{animation-delay:0.6s;}
-#n5.active .cycle-item.c3{animation-delay:1.2s;}
-#n5.active .cycle-item.c4{animation-delay:1.8s;}
+/* n8 라벨 — 오른쪽 */
+#n8 .node-info{left:38px;top:50%;transform:translateY(-50%);align-items:flex-start;}
+#n8 .node-num{font-size:clamp(1.1rem,1.6vw,1.5rem);}
+#n8 .node-key{font-size:clamp(0.58rem,0.82vw,0.76rem);}
 
 /* 카드 내부 */
 .node-content{
@@ -336,11 +186,22 @@ html,body{
 /* ★ 카드 h1 — 핵심 한 줄 크게 */
 .node-content h1{
   font-size:clamp(1.9rem,3.8vw,3.2rem);font-weight:900;line-height:1.18;
-  background:linear-gradient(135deg,#e0fff8 0%,#3effd8 100%);
+  background:linear-gradient(135deg,#fff 0%,#a0eeff 100%);
   -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
   filter:drop-shadow(0 2px 10px rgba(0,0,0,0.8));
 }
-/* h1 색상 — 아래 색상 테마 섹션에서 재정의 */
+#n1 .node-content h1{
+  background:linear-gradient(135deg,#fff 0%,#ffbbbb 100%);
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+}
+#n6 .node-content h1,#n7 .node-content h1{
+  background:linear-gradient(135deg,#fff 0%,#d8b4fe 100%);
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+}
+#n8 .node-content h1{
+  background:linear-gradient(135deg,#fff 0%,#fde68a 100%);
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+}
 
 /* ★ 빅 스탯 — 숫자 크게 하나씩 */
 .big-stat{
@@ -358,41 +219,91 @@ html,body{
   width:48px;height:2px;margin:clamp(8px,1.4vh,13px) auto;flex-shrink:0;
   background:linear-gradient(to right,transparent,var(--primary),transparent);
 }
-/* divider/p/tag/h1 색상 — 아래 색상 테마 섹션에서 재정의 */
+#n1 .divider,#n2 .divider,#n3 .divider{background:linear-gradient(to right,transparent,var(--crisis),transparent);}
+#n6 .divider,#n7 .divider{background:linear-gradient(to right,transparent,#c084fc,transparent);}
+#n8 .divider{background:linear-gradient(to right,transparent,var(--special),transparent);}
 
 .node-content p{
   font-size:clamp(1rem,1.8vw,1.3rem);line-height:1.88;
-  color:rgba(185,235,225,0.95);
+  color:rgba(222,238,248,1);
   margin-top:clamp(6px,1.2vh,12px);max-width:540px;
   text-shadow:0 1px 6px rgba(0,0,0,0.95);
 }
+#n1 .node-content p,#n2 .node-content p,#n3 .node-content p{color:rgba(248,232,232,1);}
+#n6 .node-content p,#n7 .node-content p{color:rgba(235,224,248,1);}
+
 .node-content .sub-p{
-  font-size:clamp(0.88rem,1.5vw,1.12rem);color:rgba(145,205,195,0.82);
+  font-size:clamp(0.88rem,1.5vw,1.12rem);color:rgba(180,210,230,0.85);
   line-height:1.7;margin-top:8px;max-width:480px;text-shadow:0 1px 4px rgba(0,0,0,0.9);
 }
 
-/* strong 발광 */
-strong.crisis{color:#ff9090;font-weight:900;text-shadow:0 0 14px rgba(255,80,80,0.5);}
-strong.primary{color:#3effd8;font-weight:900;text-shadow:0 0 12px rgba(62,255,216,0.55);}
-strong.special{color:#ffe066;font-weight:900;text-shadow:0 0 12px rgba(255,200,0,0.5);}
-strong.future{color:#c4a0ff;font-weight:900;text-shadow:0 0 12px rgba(160,100,255,0.5);}
-strong.white{color:#d8fff8;font-weight:900;font-size:clamp(1.3rem,2.2vw,1.8rem);
-  letter-spacing:2px;text-shadow:0 0 20px rgba(62,255,216,0.45);}
+strong.crisis{color:#ff8888;font-weight:900;text-shadow:0 0 16px rgba(255,80,80,0.65),0 1px 4px rgba(0,0,0,0.9);}
+strong.primary{color:#00f2fe;font-weight:900;text-shadow:0 0 14px rgba(0,242,254,0.6),0 1px 4px rgba(0,0,0,0.9);}
+strong.special{color:#f1c40f;font-weight:900;text-shadow:0 0 14px rgba(241,196,15,0.6),0 1px 4px rgba(0,0,0,0.9);}
+strong.future{color:#d0a0ff;font-weight:900;text-shadow:0 0 14px rgba(192,132,252,0.6),0 1px 4px rgba(0,0,0,0.9);}
+strong.white{color:#fff;font-weight:900;font-size:clamp(1.3rem,2.2vw,1.8rem);letter-spacing:2px;text-shadow:0 0 24px rgba(255,255,255,0.5),0 1px 5px rgba(0,0,0,0.9);}
 
-/* 태그 기본 (현재 그룹) */
 .tag-row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:clamp(8px,1.4vh,14px);flex-shrink:0;}
 .tag{
   padding:5px 13px;border-radius:20px;font-size:clamp(0.72rem,1.1vw,0.9rem);
-  border:1px solid rgba(62,255,216,0.3);color:rgba(62,255,216,0.85);letter-spacing:0.8px;
-  background:rgba(62,255,216,0.06);font-weight:500;
+  border:1px solid rgba(0,242,254,0.4);color:#88eeff;letter-spacing:0.8px;
+  background:rgba(0,242,254,0.07);font-weight:500;
 }
+
+/* ── 사이클 다이어그램 (n5) ── */
+.cycle-flow{
+  display:flex;align-items:center;justify-content:center;
+  gap:clamp(6px,1vw,14px);
+  margin:clamp(14px,2.2vh,24px) 0 clamp(8px,1.4vh,16px);
+  flex-wrap:nowrap;
+}
+.cycle-box{
+  display:flex;flex-direction:column;align-items:center;gap:6px;
+  padding:clamp(10px,1.6vw,18px) clamp(12px,1.8vw,22px);
+  border-radius:14px;
+  border:1px solid rgba(0,242,254,0.35);
+  background:rgba(0,242,254,0.07);
+  min-width:clamp(62px,7vw,90px);
+  transition:box-shadow 0.3s;
+}
+.cycle-box .cb-icon{font-size:clamp(1.3rem,2.2vw,2rem);line-height:1;}
+.cycle-box .cb-label{
+  font-size:clamp(0.7rem,1vw,0.88rem);
+  color:rgba(0,242,254,0.9);font-weight:700;
+  letter-spacing:0.5px;white-space:nowrap;
+}
+.cycle-arr{
+  font-size:clamp(1rem,1.6vw,1.4rem);
+  color:rgba(0,242,254,0.4);font-weight:700;flex-shrink:0;
+}
+.cycle-loop{
+  font-size:clamp(0.9rem,1.3vw,1.2rem);
+  color:rgba(0,242,254,0.3);margin-top:2px;
+}
+/* 카드 활성 시 순차 발광 */
+#n5.active .cycle-box{animation:cb-pulse 2.4s ease-in-out infinite;}
+#n5.active .cycle-box:nth-child(1){animation-delay:0s;}
+#n5.active .cycle-box:nth-child(3){animation-delay:0.6s;}
+#n5.active .cycle-box:nth-child(5){animation-delay:1.2s;}
+#n5.active .cycle-box:nth-child(7){animation-delay:1.8s;}
+@keyframes cb-pulse{
+  0%,100%{border-color:rgba(0,242,254,0.3);background:rgba(0,242,254,0.06);}
+  50%{border-color:rgba(0,242,254,0.7);background:rgba(0,242,254,0.14);
+      box-shadow:0 0 14px rgba(0,242,254,0.25);}
+}
+#n1 .tag,#n2 .tag,#n3 .tag{border-color:rgba(255,107,107,0.45);color:#ffbbbb;background:rgba(255,107,107,0.08);}
+#n6 .tag,#n7 .tag{border-color:rgba(192,132,252,0.45);color:#d8b4fe;background:rgba(192,132,252,0.08);}
+#n8 .tag{border-color:rgba(241,196,15,0.4);color:#fde68a;background:rgba(241,196,15,0.07);}
 
 /* 힌트 발광 */
 @keyframes glow-crisis{0%,100%{box-shadow:none;}50%{box-shadow:0 0 18px 10px rgba(255,107,107,0.6),0 0 34px 20px rgba(255,107,107,0.18);}}
-@keyframes glow-primary-legacy{0%,100%{box-shadow:none;}50%{box-shadow:0 0 18px 10px rgba(62,255,216,0.6),0 0 34px 20px rgba(62,255,216,0.18);}}
+@keyframes glow-primary{0%,100%{box-shadow:none;}50%{box-shadow:0 0 18px 10px rgba(0,242,254,0.6),0 0 34px 20px rgba(0,242,254,0.18);}}
 @keyframes glow-future{0%,100%{box-shadow:none;}50%{box-shadow:0 0 18px 10px rgba(192,132,252,0.65),0 0 34px 20px rgba(192,132,252,0.2);}}
 @keyframes glow-special{0%,100%{box-shadow:none;}50%{box-shadow:0 0 18px 10px rgba(241,196,15,0.65),0 0 34px 20px rgba(241,196,15,0.2);}}
-/* next-hint glow — 아래 색상 테마 섹션에서 재정의 */
+#n1.next-hint{animation:glow-crisis 1.4s ease-in-out infinite;}
+#n2.next-hint,#n3.next-hint,#n4.next-hint,#n5.next-hint{animation:glow-primary 1.4s ease-in-out infinite;}
+#n6.next-hint,#n7.next-hint{animation:glow-future 1.4s ease-in-out infinite;}
+#n8.next-hint{animation:glow-special 1.4s ease-in-out infinite;}
 .next-hint:not(.active){transform:scale(1.4);}
 
 /* ★ 4번 반전 배너 */
@@ -407,16 +318,16 @@ strong.white{color:#d8fff8;font-weight:900;font-size:clamp(1.3rem,2.2vw,1.8rem);
   animation:rb-scale 1.4s cubic-bezier(0.2,0.8,0.2,1) forwards;
 }
 #reversal-banner .rb-text.past{
-  color:#3effd8;
-  filter:drop-shadow(0 0 30px rgba(62,255,216,0.8));
+  color:#00f2fe;
+  filter:drop-shadow(0 0 30px rgba(0,242,254,0.8));
 }
 #reversal-banner .rb-text.present{
-  color:#3effd8;
-  filter:drop-shadow(0 0 30px rgba(62,255,216,0.8));
+  color:#00f2fe;
+  filter:drop-shadow(0 0 30px rgba(0,242,254,0.8));
 }
 #reversal-banner .rb-text.future{
-  color:#b388ff;
-  filter:drop-shadow(0 0 30px rgba(179,136,255,0.8));
+  color:#c084fc;
+  filter:drop-shadow(0 0 30px rgba(192,132,252,0.8));
 }
 @keyframes rb-scale{0%{transform:scale(0.5);opacity:0;}40%{transform:scale(1.05);opacity:1;}100%{transform:scale(1);opacity:1;}}
 
@@ -424,12 +335,12 @@ strong.white{color:#d8fff8;font-weight:900;font-size:clamp(1.3rem,2.2vw,1.8rem);
 #drb-complete-overlay{
   position:fixed;inset:0;z-index:500;pointer-events:none;
   display:flex;flex-direction:column;align-items:center;justify-content:center;
-  opacity:0;visibility:hidden;background:rgba(2,12,15,0.0);
+  opacity:0;visibility:hidden;background:rgba(0,4,14,0.0);
   transition:opacity 0.7s ease,visibility 0s linear 0.7s,background 0.7s ease,backdrop-filter 0.7s ease;
 }
 #drb-complete-overlay.show{
   opacity:1;visibility:visible;pointer-events:auto;
-  background:rgba(2,12,15,0.65);backdrop-filter:blur(4px);
+  background:rgba(0,4,14,0.6);backdrop-filter:blur(3px);
   transition:opacity 0.7s ease,visibility 0s linear 0s,background 0.7s ease,backdrop-filter 0.7s ease;
 }
 #drb-letters{
@@ -441,9 +352,9 @@ strong.white{color:#d8fff8;font-weight:900;font-size:clamp(1.3rem,2.2vw,1.8rem);
 .drb-letter{
   font-size:clamp(6rem,14vw,11rem);font-weight:900;line-height:1;
 }
-.drb-letter.D{color:var(--crisis);filter:drop-shadow(0 0 30px rgba(255,100,100,0.7));}
-.drb-letter.R{color:var(--primary);filter:drop-shadow(0 0 30px rgba(62,255,216,0.7));}
-.drb-letter.B{color:var(--future);filter:drop-shadow(0 0 30px rgba(179,136,255,0.7));}
+.drb-letter.D{color:var(--crisis);filter:drop-shadow(0 0 30px var(--crisis));}
+.drb-letter.R{color:var(--primary);filter:drop-shadow(0 0 30px var(--primary));}
+.drb-letter.B{color:var(--future);filter:drop-shadow(0 0 30px var(--future));}
 @keyframes drb-pulse{
   0%,100%{filter:drop-shadow(0 0 20px currentColor) drop-shadow(0 0 40px currentColor);}
   50%{filter:drop-shadow(0 0 50px currentColor) drop-shadow(0 0 100px currentColor);}
@@ -490,7 +401,7 @@ strong.white{color:#d8fff8;font-weight:900;font-size:clamp(1.3rem,2.2vw,1.8rem);
   position:fixed;inset:0;display:flex;flex-direction:column;
   justify-content:center;align-items:center;gap:clamp(14px,2.2vh,24px);
   z-index:3000;
-  background:radial-gradient(circle at 50% 50%,#021820 0%,#020c0f 100%);
+  background:radial-gradient(circle at 50% 50%,#001a3a 0%,#00030a 100%);
   opacity:0;visibility:hidden;
   transition:opacity 1.8s ease,visibility 0s linear 1.8s;
 }
@@ -513,7 +424,7 @@ strong.white{color:#d8fff8;font-weight:900;font-size:clamp(1.3rem,2.2vw,1.8rem);
 #final-phrase.show .closing-eyebrow{opacity:1;transform:translateY(0);}
 #final-phrase h2{
   font-size:clamp(2.2rem,5.2vw,4.8rem);font-weight:900;text-align:center;line-height:1.18;
-  background:linear-gradient(135deg,#d8fff8 0%,#3effd8 45%,var(--special) 100%);
+  background:linear-gradient(135deg,#fff 0%,#00f2fe 45%,var(--special) 100%);
   -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
   transform:scale(0.75);opacity:0;
   transition:transform 2.4s cubic-bezier(0.2,0.8,0.2,1),opacity 1.6s ease;
@@ -547,17 +458,17 @@ strong.white{color:#d8fff8;font-weight:900;font-size:clamp(1.3rem,2.2vw,1.8rem);
 }
 #video-frame{
   width:100%;border-radius:14px;
-  border:1.5px solid rgba(62,255,216,0.3);
+  border:1.5px solid rgba(0,242,254,0.3);
   background:#000;
   position:relative;overflow:hidden;
-  box-shadow:0 0 32px rgba(62,255,216,0.12), 0 8px 32px rgba(0,0,0,0.8);
+  box-shadow:0 0 32px rgba(0,242,254,0.12), 0 8px 32px rgba(0,0,0,0.8);
 }
 /* 상단 바 — 터미널/시스템 느낌 */
 #video-frame-bar{
   display:flex;align-items:center;gap:8px;
   padding:8px 14px;
-  background:rgba(62,255,216,0.06);
-  border-bottom:1px solid rgba(62,255,216,0.15);
+  background:rgba(0,242,254,0.06);
+  border-bottom:1px solid rgba(0,242,254,0.15);
 }
 .vf-dot{width:10px;height:10px;border-radius:50%;}
 .vf-dot.red{background:#ff6b6b;}
@@ -565,7 +476,7 @@ strong.white{color:#d8fff8;font-weight:900;font-size:clamp(1.3rem,2.2vw,1.8rem);
 .vf-dot.green{background:#2ecc71;}
 #video-frame-title{
   margin-left:6px;font-size:0.72rem;letter-spacing:2px;
-  color:rgba(62,255,216,0.55);text-transform:uppercase;font-family:monospace;
+  color:rgba(0,242,254,0.55);text-transform:uppercase;font-family:monospace;
 }
 #video-frame-badge{
   margin-left:auto;font-size:0.65rem;letter-spacing:1.5px;
@@ -592,7 +503,7 @@ strong.white{color:#d8fff8;font-weight:900;font-size:clamp(1.3rem,2.2vw,1.8rem);
 /* 영상 없을 때 플레이스홀더 */
 #video-placeholder{
   display:flex;flex-direction:column;align-items:center;gap:12px;
-  color:rgba(62,255,216,0.3);
+  color:rgba(0,242,254,0.3);
 }
 #video-placeholder .ph-icon{font-size:2.5rem;opacity:0.5;}
 #video-placeholder .ph-text{
@@ -610,34 +521,34 @@ strong.white{color:#d8fff8;font-weight:900;font-size:clamp(1.3rem,2.2vw,1.8rem);
 }
 .preset-btn{
   padding:7px 14px;border-radius:20px;cursor:pointer;font-size:clamp(0.72rem,1.1vw,0.88rem);
-  border:1px solid rgba(62,255,216,0.35);color:rgba(62,255,216,0.88);background:rgba(62,255,216,0.07);
+  border:1px solid rgba(0,242,254,0.35);color:#88eeff;background:rgba(0,242,254,0.07);
   transition:0.25s;font-family:inherit;letter-spacing:0.5px;
 }
-.preset-btn:hover{background:rgba(62,255,216,0.18);border-color:rgba(62,255,216,0.7);color:#fff;box-shadow:0 0 12px rgba(62,255,216,0.3);}
+.preset-btn:hover{background:rgba(0,242,254,0.18);border-color:rgba(0,242,254,0.7);color:#fff;box-shadow:0 0 12px rgba(0,242,254,0.3);}
 
 #ai-input-area{display:flex;gap:10px;align-items:center;margin-bottom:10px;}
 #ai-question{
-  flex:1;background:rgba(62,255,216,0.05);
-  border:1px solid rgba(62,255,216,0.28);border-radius:12px;
+  flex:1;background:rgba(0,242,254,0.05);
+  border:1px solid rgba(0,242,254,0.28);border-radius:12px;
   color:#fff;font-size:clamp(0.88rem,1.4vw,1.02rem);padding:12px 16px;
   outline:none;font-family:inherit;transition:border-color 0.3s,box-shadow 0.3s;
 }
-#ai-question:focus{border-color:var(--primary);box-shadow:0 0 18px rgba(62,255,216,0.2);}
-#ai-question::placeholder{color:rgba(62,255,216,0.28);}
+#ai-question:focus{border-color:var(--primary);box-shadow:0 0 18px rgba(0,242,254,0.2);}
+#ai-question::placeholder{color:rgba(0,242,254,0.32);}
 #ai-send{
-  padding:12px 20px;background:rgba(62,255,216,0.1);
+  padding:12px 20px;background:rgba(0,242,254,0.1);
   border:1px solid var(--primary);border-radius:12px;
   color:var(--primary);cursor:pointer;font-weight:700;font-size:0.92rem;
   transition:0.3s;white-space:nowrap;font-family:inherit;
 }
-#ai-send:hover{background:var(--primary);color:#000;box-shadow:0 0 18px rgba(62,255,216,0.4);}
+#ai-send:hover{background:var(--primary);color:#000;box-shadow:0 0 18px rgba(0,242,254,0.4);}
 #ai-send:disabled{opacity:0.4;cursor:not-allowed;}
-#ai-thinking{text-align:center;padding:18px;color:rgba(62,255,216,0.55);font-size:0.88rem;letter-spacing:3px;display:none;}
+#ai-thinking{text-align:center;padding:18px;color:rgba(0,242,254,0.55);font-size:0.88rem;letter-spacing:3px;display:none;}
 #ai-thinking.visible{display:block;}
 @keyframes blink{0%,100%{opacity:0.3;}50%{opacity:1;}}
 .cursor-blink{animation:blink 0.9s ease-in-out infinite;}
 #ai-answer{
-  background:rgba(62,255,216,0.04);border:1px solid rgba(62,255,216,0.14);
+  background:rgba(0,242,254,0.04);border:1px solid rgba(0,242,254,0.14);
   border-radius:12px;padding:16px 18px;min-height:72px;
   font-size:clamp(0.82rem,1.3vw,0.96rem);line-height:1.9;color:rgba(200,230,245,1);
   white-space:pre;word-break:break-word;display:none;
@@ -685,15 +596,15 @@ strong.white{color:#d8fff8;font-weight:900;font-size:clamp(1.3rem,2.2vw,1.8rem);
 #video-overlay.show #vov-inner{transform:scale(1);opacity:1;}
 #vov-bar{
   display:flex;align-items:center;gap:8px;padding:9px 16px;
-  background:rgba(62,255,216,0.06);
-  border:1px solid rgba(62,255,216,0.12);border-bottom:none;
+  background:rgba(0,242,254,0.06);
+  border:1px solid rgba(0,242,254,0.15);border-bottom:none;
   border-radius:14px 14px 0 0;
 }
 .vov-dot{width:11px;height:11px;border-radius:50%;}
 .vov-dot.r{background:#ff6b6b;}.vov-dot.y{background:#f1c40f;}.vov-dot.g{background:#2ecc71;}
 #vov-title{
   margin-left:6px;font-size:0.72rem;letter-spacing:2px;
-  color:rgba(62,255,216,0.55);font-family:monospace;flex:1;
+  color:rgba(0,242,254,0.55);font-family:monospace;flex:1;
 }
 #vov-close{
   padding:5px 16px;border-radius:20px;
@@ -704,14 +615,14 @@ strong.white{color:#d8fff8;font-weight:900;font-size:clamp(1.3rem,2.2vw,1.8rem);
 #vov-close:hover{border-color:rgba(255,107,107,0.6);color:rgba(255,107,107,0.9);}
 #vov-player{
   width:100%;aspect-ratio:16/9;background:#000;
-  border:1px solid rgba(62,255,216,0.12);border-top:none;
+  border:1px solid rgba(0,242,254,0.15);border-top:none;
   border-radius:0 0 14px 14px;overflow:hidden;
   display:flex;align-items:center;justify-content:center;
 }
 #vov-video{width:100%;height:100%;object-fit:contain;display:none;}
 #vov-ph{
   display:flex;flex-direction:column;align-items:center;gap:12px;
-  color:rgba(62,255,216,0.3);text-align:center;
+  color:rgba(0,242,254,0.3);text-align:center;
 }
 #vov-ph .pi{font-size:2.8rem;opacity:.5;}
 #vov-ph .pt{font-size:.72rem;letter-spacing:2px;font-family:monospace;line-height:1.8;}
@@ -765,13 +676,13 @@ strong.white{color:#d8fff8;font-weight:900;font-size:clamp(1.3rem,2.2vw,1.8rem);
 #outro-thanks.show{opacity:1;}
 #outro-thanks .thanks-word{
   font-size:clamp(3rem,8vw,7rem);font-weight:900;letter-spacing:0.3em;
-  background:linear-gradient(135deg,#d8fff8 0%,#3effd8 50%,var(--special) 100%);
+  background:linear-gradient(135deg,#fff 0%,#00f2fe 50%,var(--special) 100%);
   -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
-  filter:drop-shadow(0 0 30px rgba(62,255,216,0.4));
+  filter:drop-shadow(0 0 30px rgba(0,242,254,0.4));
 }
 #outro-thanks .thanks-sub{
   margin-top:16px;font-size:clamp(0.8rem,1.4vw,1.1rem);
-  letter-spacing:0.5em;color:rgba(62,255,216,0.45);
+  letter-spacing:0.5em;color:rgba(0,242,254,0.45);
   text-transform:uppercase;font-weight:500;
 }
 
@@ -783,8 +694,8 @@ strong.white{color:#d8fff8;font-weight:900;font-size:clamp(1.3rem,2.2vw,1.8rem);
   border-radius:30px;cursor:pointer;font-size:0.75rem;
   backdrop-filter:blur(10px);transition:0.3s;letter-spacing:1px;
 }
-#sound-toggle:hover{border-color:rgba(62,255,216,0.5);color:var(--primary);}
-#sound-toggle.on{border-color:rgba(62,255,216,0.4);color:rgba(62,255,216,0.65);}
+#sound-toggle:hover{border-color:var(--primary);color:var(--primary);}
+#sound-toggle.on{border-color:rgba(0,242,254,0.4);color:rgba(0,242,254,0.6);}
 </style>
 </head>
 <body>
@@ -826,13 +737,11 @@ strong.white{color:#d8fff8;font-weight:900;font-size:clamp(1.3rem,2.2vw,1.8rem);
 <div id="final-phrase">
   <div class="ghost-reset" onclick="location.reload()">↺ 처음으로</div>
   <div class="closing-eyebrow">DRB AI Transformation</div>
-  <h2>도구가 바뀌면<br>조직의 구조가 바뀝니다</h2>
+  <h2>도구가 바뀌면<br>일하는 방식이 바뀌고<br>문화가 바뀝니다</h2>
   <div class="closing-sub">
-    LOGIBOT은 아직 완성이 아닙니다.<br>
-    하지만 <strong style="color:var(--primary);text-shadow:0 0 14px rgba(62,255,216,0.5)">지금 이 순간 작동하고 있고,</strong><br>
-    매일 DRB에 더 맞춰지고 있습니다.<br><br>
-    이 방향이 맞다고 판단하신다면 —<br>
-    다음 확장을 함께 논의하고 싶습니다.
+    LOGIBOT은 단순한 챗봇이 아닙니다.<br>
+    DRB의 모든 구성원이 전문가가 되는 순간,<br>
+    그것이 진짜 <strong style="color:var(--primary);text-shadow:0 0 14px rgba(0,242,254,0.5)">AX</strong>의 시작입니다.
   </div>
 
   <div id="ai-demo-box">
@@ -895,7 +804,7 @@ strong.white{color:#d8fff8;font-weight:900;font-size:clamp(1.3rem,2.2vw,1.8rem);
 <div id="outro-overlay"></div>
 <div id="outro-thanks">
   <div class="thanks-word">감사합니다</div>
-  <div class="thanks-sub">DRB · AI Transformation · LOGIBOT</div>
+  <div class="thanks-sub">DRB Logistics Intelligence · LOGIBOT</div>
 </div>
 
 <!-- ── 시연 영상 전체화면 오버레이 ── -->
@@ -923,7 +832,7 @@ strong.white{color:#d8fff8;font-weight:900;font-size:clamp(1.3rem,2.2vw,1.8rem);
 <!-- 노드 -->
 <div id="network-container">
 
-  <!-- ── 과거 그룹 (빨강) ── -->
+  <!-- D 그룹 — 위기/문제 (빨강) 1개 -->
   <div class="neuron-node" id="n1" onclick="toggleNode(1)">
     <div class="node-info"><span class="node-num">01</span><span class="node-key">문제</span></div>
     <div class="node-content">
@@ -934,13 +843,10 @@ strong.white{color:#d8fff8;font-weight:900;font-size:clamp(1.3rem,2.2vw,1.8rem);
     </div>
   </div>
 
-  <!-- ── 현재 더미 노드들 (줄기) ── -->
   <div class="neuron-node dummy" id="nd1"></div>
   <div class="neuron-node dummy" id="nd2"></div>
-  <div class="neuron-node dummy" id="nd3"></div>
-  <div class="neuron-node dummy" id="nd4"></div>
 
-  <!-- ── 현재 그룹 (청록) ── -->
+  <!-- R 그룹 — 해결/기술 (청록) 4개 -->
   <div class="neuron-node" id="n2" onclick="toggleNode(2)">
     <div class="node-info"><span class="node-num">02</span><span class="node-key">기술</span></div>
     <div class="node-content">
@@ -960,7 +866,7 @@ strong.white{color:#d8fff8;font-weight:900;font-size:clamp(1.3rem,2.2vw,1.8rem);
   <div class="neuron-node" id="n3" onclick="toggleNode(3)">
     <div class="node-info"><span class="node-num">03</span><span class="node-key">수집</span></div>
     <div class="node-content">
-      <h1>데이터 검증,<br>오답도 자산입니다</h1>
+      <h1>현장 검증,<br>실패도 자산입니다</h1>
       <div class="divider"></div>
       <div class="big-stat primary">2025. 11</div>
       <p class="sub-p">국내·해외영업 담당자 FAQ 수집<br>팀 내 파일럿 테스트 완료</p>
@@ -971,6 +877,9 @@ strong.white{color:#d8fff8;font-weight:900;font-size:clamp(1.3rem,2.2vw,1.8rem);
       </div>
     </div>
   </div>
+
+  <div class="neuron-node dummy" id="nr1"></div>
+  <div class="neuron-node dummy" id="nr2"></div>
 
   <div class="neuron-node" id="n4" onclick="toggleNode(4)">
     <div class="node-info"><span class="node-num">04</span><span class="node-key">베타</span></div>
@@ -993,21 +902,36 @@ strong.white{color:#d8fff8;font-weight:900;font-size:clamp(1.3rem,2.2vw,1.8rem);
     <div class="node-content">
       <h1>쓸수록<br>DRB에 맞춰집니다</h1>
       <div class="divider"></div>
-      <div class="cycle-diagram">
-        <div class="cycle-item c1"><span class="c-icon">💬</span><span>사용</span></div>
-        <div class="cycle-arrow">→</div>
-        <div class="cycle-item c2"><span class="c-icon">📊</span><span>피드백</span></div>
-        <div class="cycle-arrow">→</div>
-        <div class="cycle-item c3"><span class="c-icon">🔄</span><span>재학습</span></div>
-        <div class="cycle-arrow">→</div>
-        <div class="cycle-item c4"><span class="c-icon">🎯</span><span>정밀도↑</span></div>
-        <div class="cycle-arrow cycle-back">↩</div>
+      <div class="cycle-flow">
+        <div class="cycle-box">
+          <span class="cb-icon">💬</span>
+          <span class="cb-label">사용</span>
+        </div>
+        <span class="cycle-arr">→</span>
+        <div class="cycle-box">
+          <span class="cb-icon">📊</span>
+          <span class="cb-label">피드백</span>
+        </div>
+        <span class="cycle-arr">→</span>
+        <div class="cycle-box">
+          <span class="cb-icon">🔄</span>
+          <span class="cb-label">재학습</span>
+        </div>
+        <span class="cycle-arr">→</span>
+        <div class="cycle-box">
+          <span class="cb-icon">🎯</span>
+          <span class="cb-label">정밀도↑</span>
+        </div>
       </div>
-      <p class="sub-p"><strong class="primary">추가 비용 없이</strong> 지속 진화합니다.<br>초기 구축 이후 자기강화 구조입니다.</p>
+      <div class="cycle-loop">↩ 자기강화 루프</div>
+      <p class="sub-p" style="margin-top:clamp(10px,1.6vh,18px);">
+        <strong class="primary">추가 비용 없이</strong> 지속 진화합니다.<br>
+        초기 구축 이후 자기강화 구조입니다.
+      </p>
     </div>
   </div>
 
-  <!-- ── 미래 그룹 (보라) ── -->
+  <!-- B 그룹 — 성과/미래 (보라) 2개 -->
   <div class="neuron-node dummy" id="nb1"></div>
   <div class="neuron-node dummy" id="nb2"></div>
 
@@ -1017,16 +941,16 @@ strong.white{color:#d8fff8;font-weight:900;font-size:clamp(1.3rem,2.2vw,1.8rem);
       <h1>같은 인원으로<br>더 높은 가치를</h1>
       <div class="divider"></div>
       <div class="big-stat future">인력 의존도 ↓</div>
-      <p class="sub-p">담당자의 판단이 즉시 공유됩니다.<br>담당자는 응대 대신<br><strong class="future">판단·협상·관계에 집중합니다.</strong></p>
+      <p class="sub-p">10년 경력의 판단이 즉시 공유됩니다.<br>담당자는 응대 대신<br><strong class="future">판단·협상·관계에 집중합니다.</strong></p>
     </div>
   </div>
 
   <div class="neuron-node" id="n7" onclick="toggleNode(7)">
     <div class="node-info"><span class="node-num">07</span><span class="node-key">미래</span></div>
     <div class="node-content">
-      <h1 style="white-space: nowrap;">지식 손실이<br>구조적으로 불가능해집니다</h1>
+      <h1>지식 손실이 구조적으로<br>불가능해집니다</h1>
       <div class="divider"></div>
-      <p><strong class="future">SAP·그룹웨어 연동</strong>이 완성되면<br>실시간 데이터와 결합한 판단이 가능합니다.</p>
+      <p><strong class="future">SAP·그룹웨어 연동</strong>이 완성되면 실시간 데이터와 결합한 판단이 가능합니다.</p>
       <div class="tag-row">
         <span class="tag">SAP 연동</span>
         <span class="tag">그룹웨어 연동</span>
@@ -1036,7 +960,7 @@ strong.white{color:#d8fff8;font-weight:900;font-size:clamp(1.3rem,2.2vw,1.8rem);
     </div>
   </div>
 
-  <!-- ── 실현 (금색) ── -->
+  <!-- 8번 — 실현 (금색) -->
   <div class="neuron-node" id="n8" onclick="toggleNode(8)">
     <div class="node-info"><span class="node-num">08</span><span class="node-key">실현</span></div>
     <div class="node-content">
@@ -1061,164 +985,97 @@ strong.white{color:#d8fff8;font-weight:900;font-size:clamp(1.3rem,2.2vw,1.8rem);
 /* ══════════════════════════════════════
    레이아웃
 ══════════════════════════════════════ */
-/* ── 뫼비우스(∞) 레이아웃 헬퍼 ──
-   Lemniscate of Bernoulli:
-   x = cx + rx·cos(t)/(1+sin²(t))
-   y = cy + ry·sin(t)·cos(t)/(1+sin²(t))
-   t=0   → 우측 최외점 (실현 n8)
-   t=π   → 좌측 최외점 (과거 n1)
-   좌 루프: t ∈ [π/2, π] + [-π, -π/2]
-   우 루프: t ∈ [-π/2, 0] + [0, π/2]         */
-function mobiusPoint(t, cx, cy, rx, ry){
-  const s = Math.sin(t), s2 = s*s;
-  const denom = 1 + s2;
-  return {
-    x: cx + rx * Math.cos(t) / denom,
-    y: cy + ry * s * Math.cos(t) / denom,
-  };
-}
-
 function buildLayout(){
   const W=window.innerWidth, H=window.innerHeight;
-  const cx = W * 0.50, cy = H * 0.50;
-  const rx = W * 0.36, ry = H * 0.30;
-  const PI = Math.PI;
-  const p = (t) => mobiusPoint(t, cx, cy, rx, ry);
+  const topY=H*0.19, botY=H*0.76, midY=(topY+botY)/2;
+  const dCX=W*0.20, rCX=W*0.50, bCX=W*0.80;
+  const hw=W*0.068;
+  return{
+    /* D — nd1(좌위) n1(우중앙) nd2(좌하) → 삼각형으로 D자 활 */
+    n1:{x:dCX+hw*0.55, y:midY},          // D의 오른쪽 꼭짓점 (활)
+    nd1:{x:dCX-hw*0.2, y:topY+( botY-topY)*0.08},  // D 위
+    nd2:{x:dCX-hw*0.2, y:botY-(botY-topY)*0.08},   // D 아래
 
-  /* ── ∞ 배치 t값 ──
-     좌 루프(과거·현재): n1=π(좌끝) → n2=0.85π(좌상) → n3=0.65π → 교차 → n4=-0.65π → n5=-0.85π(좌하)
-     우 루프(미래·실현): n6=-0.2π(우상) → n8=0(우끝) → n7=0.2π(우하)
-  */
-  return {
-    n1 : p(PI),           // 과거  — 좌측 최외점
-    nd1: p(PI*0.925),     // 줄기  — n1↔n2
-    nd3: p(PI*0.75),      // 줄기  — n2↔n3
-    nd2: p(PI*-0.925),    // 줄기  — n5↔n1(하단 귀환)
-    nd4: p(PI*-0.75),     // 줄기  — n4↔n5
-    n2 : p(PI*0.85),      // 현재② — 좌 상단
-    n3 : p(PI*0.65),      // 현재③ — 좌→교차
-    n4 : p(PI*-0.65),     // 현재④ — 교차→좌하
-    n5 : p(PI*-0.85),     // 현재⑤ — 좌 하단
-    nb1: p(PI*-0.10),     // 줄기  — n6→실현 사이 (우 상단)
-    nb2: p(PI*0.10),      // 줄기  — n7→실현 사이 (우 하단)
-    n6 : p(PI*-0.35),     // 미래⑥ — 우 상단 (실현과 분리)
-    n7 : p(PI*0.35),      // 미래⑦ — 우 하단 (실현과 분리)
-    n8 : p(0),            // 실현  — 우측 최외점(∞ 끝)
+    /* R — 현재 4개: 기존 R그룹 위치 그대로 */
+    n2:{x:rCX-hw, y:topY},
+    nr1:{x:rCX-hw, y:midY},
+    n3:{x:rCX-hw, y:botY},
+    nr2:{x:rCX+hw*0.92, y:topY+(midY-topY)*0.32},
+    n4:{x:rCX+hw*1.0,  y:midY},
+    n5:{x:rCX+hw*0.92, y:botY+(topY-botY)*0.32},
+
+    /* B — 미래 2개: 기존 B그룹 상단 2개 위치 */
+    n6:{x:bCX-hw, y:topY},
+    nb1:{x:bCX-hw, y:midY},
+    n7:{x:bCX-hw, y:botY},
+    nb2:{x:bCX+hw*0.92, y:topY+(midY-topY)*0.32},
+
+    /* 실현 n8 위치 */
+    n8:{x:bCX+hw*0.88, y:botY},
   };
 }
 
-const ALL_IDS=['n1','nd1','nd2','nd3','nd4','n2','n3','n4','n5','nb1','nb2','n6','n7','n8'];
+const ALL_IDS=['n1','nd1','nd2','n2','nr1','n3','nr2','n4','n5','n6','nb1','n7','nb2','n8'];
 
-/* ── 선 정의 — ∞ 궤도 흐름 ──
-   흐름: n1(좌끝) → nd1 → n2 → nd3 → n3 → [교차] → n8(우끝) → n6 → nb1 → n3
-                                                       ↘ n4 → nd4 → n5 → nd2 → n1(귀환)
-*/
-// D: 과거 → 현재 상단 루프 (좌 루프 상반)
+function applyLayout(){
+  const pos=buildLayout();
+  ALL_IDS.forEach(id=>{
+    const el=document.getElementById(id); if(!el)return;
+    const p=pos[id];
+    const w=el.offsetWidth||24, h=el.offsetHeight||24;
+    el.dataset.origLeft=(p.x-w/2)+'px';
+    el.dataset.origTop =(p.y-h/2)+'px';
+    if(!el.classList.contains('active')){
+      el.style.left=el.dataset.origLeft;
+      el.style.top =el.dataset.origTop;
+    }
+  });
+}
+
+/* ═══════════════════════════════════════════════════
+   알파벳 획 엣지 — 이미지 기반 D·R·B 모양
+   D: 세로(nd1↔nd2) + 삼각활(nd1→n1→nd2)
+   R: 세로(n2→nr1→n3) + 위꺾임(n2→nr2→nr1) + 다리(nr1→n4→n5)
+   B: 세로(n6→nb1→n7) + 위볼록(n6→nb2→nb1) + 아래볼록(nb1→n8→n7)
+══════════════════════════════════════════════════= */
 const D_EDGES=[
-  ['n1','nd1'],   // 과거 → 줄기
-  ['nd1','n2'],   // 줄기 → 현재②
-  ['n2','nd3'],   // 현재② → 줄기
-  ['nd3','n3'],   // 줄기 → 현재③
+  ['nd1','nd2'],   // D 왼쪽 세로획
+  ['nd1','n1'],    // D 위→오른쪽 꺾임
+  ['n1','nd2'],    // D 오른쪽→아래 꺾임
 ];
-// R: 교차점(n8) 통과 → 현재 하단 루프 → 과거 귀환
 const R_EDGES=[
-  ['n3','n8'],    // 현재③ → 실현(교차)
-  ['n8','n4'],    // 실현 → 현재④
-  ['n4','nd4'],   // 현재④ → 줄기
-  ['nd4','n5'],   // 줄기 → 현재⑤
-  ['n5','nd2'],   // 현재⑤ → 줄기
-  ['nd2','n1'],   // 줄기 → 과거 (∞ 귀환)
+  ['n2','nr1'],    // R 세로 상단
+  ['nr1','n3'],    // R 세로 하단
+  ['n2','nr2'],    // R 위 오른쪽 대각
+  ['nr2','nr1'],   // R 위 볼록 귀환
+  ['nr1','n4'],    // R 다리 시작
+  ['n4','n5'],     // R 다리 꺾임
 ];
-// B: 교차점 → 미래 우측 루프
 const B_EDGES=[
-  ['n8','nb1'],   // 실현 → 미래 상단 줄기
-  ['nb1','n6'],   // 줄기 → 미래⑥
-  ['n8','nb2'],   // 실현 → 미래 하단 줄기
-  ['nb2','n7'],   // 줄기 → 미래⑦
+  ['n6','nb1'],    // B 세로 상단
+  ['nb1','n7'],    // B 세로 하단
+  ['n6','nb2'],    // B 위 볼록 오른쪽
+  ['nb2','nb1'],   // B 위 볼록 귀환
+  ['nb1','n8'],    // B 아래 볼록 오른쪽
+  ['n8','n7'],     // B 아래 볼록 귀환
 ];
-// 미래 → 실현 수렴 (우 루프 완결)
-const DRB_BRIDGE=[
-  ['n6','n8'],    // 미래⑥ → 실현
-  ['n7','n8'],    // 미래⑦ → 실현
-];
+const DR_CONNECT=[];
+const RB_CONNECT=[];
+const DRB_BRIDGE=[];
 
-/* 그룹 맵 — D=과거, R=현재, B=미래, S=실현 */
-const LETTER_MAP={D:['n1'],R:['n2','n3','n4','n5'],B:['n6','n7'],S:['n8']};
-const LETTER_ALL={
-  D:['n1','nd1','nd2','nd3','nd4'],
-  R:['n2','n3','n4','n5'],
-  B:['nb1','nb2','n6','n7'],
-  S:['n8'],
-};
-const DUMMY_IDS=['nd1','nd2','nd3','nd4','nb1','nb2'];
-const DUMMY_LETTER={nd1:'D',nd2:'D',nd3:'D',nd4:'D',nb1:'B',nb2:'B'};
+const LETTER_MAP={D:['n1'],R:['n2','n3','n4','n5'],B:['n6','n7']};
+const LETTER_ALL={D:['n1','nd1','nd2'],R:['n2','nr1','n3','nr2','n4','n5'],B:['n6','nb1','n7','nb2']};
+const DUMMY_IDS=['nd1','nd2','nr1','nr2','nb1','nb2'];
+const DUMMY_LETTER={nd1:'D',nd2:'D',nr1:'R',nr2:'R',nb1:'B',nb2:'B'};
 const LETTER_COLORS={
   D:{stroke:'rgba(255,107,107,0.9)',shadow:'rgba(255,107,107,0.7)'},
-  R:{stroke:'rgba(62,255,216,0.9)',  shadow:'rgba(62,255,216,0.7)'},
+  R:{stroke:'rgba(0,242,254,0.9)',  shadow:'rgba(0,242,254,0.7)'},
   B:{stroke:'rgba(192,132,252,0.9)',shadow:'rgba(192,132,252,0.7)'},
-  S:{stroke:'rgba(241,196,15,0.9)', shadow:'rgba(241,196,15,0.7)'},
 };
 
 const NUM_TO_ID={1:'n1',2:'n2',3:'n3',4:'n4',5:'n5',6:'n6',7:'n7',8:'n8'};
 function numToId(n){return NUM_TO_ID[n];}
 function idToNum(id){return parseInt(Object.entries(NUM_TO_ID).find(([,v])=>v===id)?.[0]);}
-
-/* 노드 실제 크기 맵 (offsetWidth 타이밍 문제 회피) */
-const NODE_SIZE={
-  n1:26, n2:26, n3:26, n4:26, n5:26,
-  n6:26, n7:26, n8:26,
-  nd1:10,nd2:10,nd3:10,nd4:10,nb1:10,nb2:10,
-};
-
-function applyLayout(){
-  const pos=buildLayout();
-  const W=window.innerWidth, H=window.innerHeight;
-  const cx=W*0.50, cy=H*0.50;
-
-  ALL_IDS.forEach(id=>{
-    const el=document.getElementById(id); if(!el)return;
-    const p=pos[id]; if(!p)return;
-    const sz=NODE_SIZE[id]||24;
-
-    // 중심 좌표 기준으로 left/top 계산
-    el.dataset.origLeft=(p.x - sz/2)+'px';
-    el.dataset.origTop =(p.y - sz/2)+'px';
-    if(!el.classList.contains('active')){
-      el.style.left=el.dataset.origLeft;
-      el.style.top =el.dataset.origTop;
-    }
-
-    // ── 라벨 방향: 중심(cx,cy)에서 노드 바깥 방향 ──
-    const ni=el.querySelector('.node-info');
-    if(!ni||el.classList.contains('dummy')) return;
-
-    const dx=p.x-cx, dy=p.y-cy;
-    const angle=Math.atan2(dy,dx)*180/Math.PI;
-    const offset=(sz+10)+'px';
-
-    ni.style.position='absolute';
-    ni.style.top='50%';
-    ni.style.transform='translateY(-50%)';
-    ni.style.display='flex';
-    ni.style.flexDirection='column';
-    ni.style.whiteSpace='nowrap';
-    ni.style.pointerEvents='none';
-
-    if(angle>-90 && angle<90){
-      // 오른쪽 반구 → 라벨 오른쪽
-      ni.style.left=offset;
-      ni.style.right='';
-      ni.style.alignItems='flex-start';
-      ni.style.textAlign='left';
-    } else {
-      // 왼쪽 반구 → 라벨 왼쪽
-      ni.style.right=offset;
-      ni.style.left='';
-      ni.style.alignItems='flex-end';
-      ni.style.textAlign='right';
-    }
-  });
-}
 
 /* 상태 */
 let activeNode=null, visitedSequence=[], closingPhase=0, drbGlowPhase=0;
@@ -1231,15 +1088,35 @@ function isVisited(id){
   if(DUMMY_IDS.includes(id)) return document.getElementById(id)?.classList.contains('visited');
   const n=idToNum(id); return n&&visitedSequence.includes(n);
 }
-function isLetterComplete(l){return LETTER_MAP[l].every(id=>visitedSequence.includes(idToNum(id)));}
-function isDRBComplete(){return['D','R','B'].every(isLetterComplete);}
-function isAllComplete(){return['D','R','B','S'].every(isLetterComplete);}
 
-/* 더미 동기화 */
+/* ─────────────────────────────────────────────
+   isLetterComplete: 그룹별 완성 조건
+   D(n1 1개)  → n1 방문만으로 즉시 완성
+   R(n2~n5)   → 4개 모두 방문
+   B(n6,n7)   → 2개 모두 방문
+───────────────────────────────────────────── */
+function isLetterComplete(l){
+  var nodes = LETTER_MAP[l];
+  return nodes.every(function(id){
+    var n = idToNum(id);
+    return n && visitedSequence.indexOf(n) !== -1;
+  });
+}
+function isDRBComplete(){return isLetterComplete('D')&&isLetterComplete('R')&&isLetterComplete('B');}
+
+/* 더미 동기화: 그룹 완성 시 더미 전체 visited 처리 */
 function syncDummies(letter){
-  const anyVis=LETTER_MAP[letter].some(id=>visitedSequence.includes(idToNum(id)));
-  const map={D:['nd1','nd2','nd3','nd4'],R:[],B:['nb1','nb2'],S:[]};
-  (map[letter]||[]).forEach(d=>document.getElementById(d)?.classList.toggle('visited',anyVis));
+  var complete = isLetterComplete(letter);
+  var anyVis   = LETTER_MAP[letter].some(function(id){
+    var n=idToNum(id); return n&&visitedSequence.indexOf(n)!==-1;
+  });
+  var map={D:['nd1','nd2'],R:['nr1','nr2'],B:['nb1','nb2']};
+  (map[letter]||[]).forEach(function(d){
+    var el=document.getElementById(d);
+    if(!el) return;
+    /* 완성이면 visited, 아니면 anyVis(첫 방문)로 일부만 */
+    el.classList.toggle('visited', complete ? true : anyVis);
+  });
 }
 
 /* 카드 날아오기 */
@@ -1250,9 +1127,6 @@ function openCard(el){
   el.style.width='24px';el.style.height='24px';
   el.style.borderRadius='50%';
   el.classList.add('active');
-  /* ── 배지 인라인 스타일 초기화: CSS .active .node-info 가 완전히 제어하도록 ── */
-  var ni=el.querySelector('.node-info');
-  if(ni){ ni.removeAttribute('style'); }
   requestAnimationFrame(()=>requestAnimationFrame(()=>{
     el.style.transition=[
       'left 0.7s cubic-bezier(0.2,0.85,0.2,1)',
@@ -1267,7 +1141,7 @@ function openCard(el){
     el.style.width=cw+'px';el.style.height=ch+'px';
     el.style.left=(W/2-cw/2)+'px';el.style.top=(H/2-ch/2)+'px';
     el.style.borderRadius='26px';
-    el.style.boxShadow='0 0 80px rgba(0,0,0,0.98),0 0 40px rgba(62,255,216,0.04),inset 0 0 60px rgba(2,14,12,0.5)';
+    el.style.boxShadow='0 0 100px rgba(0,0,0,0.95),0 0 50px rgba(0,242,254,0.06)';
   }));
 }
 
@@ -1286,11 +1160,8 @@ function closeCard(el){
   setTimeout(()=>{
     el.classList.remove('active');
     el.style.transition='';
-    /* 라벨 위치 복원 — applyLayout이 JS 인라인 스타일을 재적용 */
-    applyLayout();
-    if(el.id==='n7' && isDRBComplete() && !drbCompleteShown){
-      setTimeout(()=>showDRBComplete(), 300);
-    }
+    /* 카드 닫힐 때도 DRB 완성 재체크 */
+    if(isDRBComplete()&&!drbCompleteShown) showDRBComplete();
   },500);
 }
 
@@ -1300,10 +1171,10 @@ function setTone(type){
   ov.className=type;
   document.body.style.transition='background 1.8s ease';
   const bg={
-    crisis:'radial-gradient(circle at 20% 50%,#1a0606 0%,#020c0f 70%)',
-    resolve:'radial-gradient(circle at 50% 50%,#021a14 0%,#020c0f 70%)',
-    future:'radial-gradient(circle at 80% 50%,#0e0520 0%,#020c0f 70%)',
-    default:'radial-gradient(circle at 50% 50%,#020e14 0%,#020c0f 70%)',
+    crisis:'radial-gradient(circle at 50% 62%,#3d0404 0%,#0d0003 70%)',
+    resolve:'radial-gradient(circle at 50% 28%,#002040 0%,#00030a 70%)',
+    future:'radial-gradient(circle at 50% 46%,#1c0038 0%,#00030a 70%)',
+    default:'radial-gradient(circle at 50% 45%,#001a35 0%,#00030a 70%)',
   };
   document.body.style.background=bg[type]||bg.default;
 }
@@ -1341,9 +1212,26 @@ function triggerReversal(text, tone){
 
 /* 엣지 흐름 */
 function triggerEdgeFlows(nodeId){
-  // 궤도 기반 렌더링 — 개별 엣지 흐름 대신 스파크 속도를 일시 가속
-  ORBIT_SPARKS.forEach(function(s){ s.speed=0.014; });
-  setTimeout(function(){ ORBIT_SPARKS.forEach(function(s){ s.speed=0.008; }); },1200);
+  var now=performance.now();
+  /* 완성된 그룹: 전체 엣지 항상 재트리거 (done 무시) */
+  ['D','R','B'].forEach(function(letter){
+    if(!isLetterComplete(letter)) return;
+    var edges={'D':D_EDGES,'R':R_EDGES,'B':B_EDGES}[letter];
+    edges.forEach(function(e){
+      var key=e[0]+'->'+e[1];
+      flowingEdges.set(key,{progress:0,done:false,startTime:now});
+    });
+  });
+  /* 미완성 그룹: 현재 노드에 연결된 엣지만 트리거 */
+  [...D_EDGES,...R_EDGES,...B_EDGES].forEach(function(e){
+    var a=e[0],b=e[1];
+    if(a===nodeId||b===nodeId){
+      var key=a+'->'+b;
+      if(!flowingEdges.has(key)||!flowingEdges.get(key).done){
+        flowingEdges.set(key,{progress:0,done:false,startTime:now});
+      }
+    }
+  });
 }
 
 /* 다음 힌트 */
@@ -1361,35 +1249,38 @@ function toggleNode(num){
   const id=numToId(num); if(!id)return;
   const el=document.getElementById(id); if(!el)return;
 
+  // 이미 열려있으면 닫기
   if(el.classList.contains('active')){
     closeCard(el); activeNode=null; return;
   }
   if(activeNode){closeCard(activeNode);activeNode=null;}
 
+  // 10번 — 카드 열기 (클로징은 카드 안 버튼으로)
   el.classList.add('visited');
   openCard(el);
   activeNode=el;
 
   if(!visitedSequence.includes(num)) visitedSequence.push(num);
-  ['D','R','B','S'].forEach(syncDummies);
+  /* 더미 & 완성 즉시 동기화 */
+  ['D','R','B'].forEach(syncDummies);
+  /* 완성된 그룹 엣지 흐름 강제 트리거 (visitedSequence push 직후이므로 타이밍 보장) */
   triggerEdgeFlows(id);
+  /* 카드 열린 직후 DRB 완성 체크 (D는 n1 하나이므로 즉시 가능) */
+  setTimeout(function(){
+    if(isDRBComplete()&&!drbCompleteShown) showDRBComplete();
+  },900);
 
-  // 분위기 + 전환 연출
-  if(num===1){ setTone('crisis'); playTick('crisis'); }
-  else if(num===2){ if(!reversalBusy){ setTimeout(()=>triggerReversal('과거 → 현재','resolve'),200); playReversal(); } setTone('resolve'); }
-  else if([3,4,5].includes(num)){ setTone('resolve'); playTick('primary'); }
-  else if(num===6){ if(!reversalBusy){ setTimeout(()=>triggerReversal('현재 → 미래','future'),200); playReversal(); } setTone('future'); }
+  // 분위기 + 반전 연출
+  if(num===2){ if(!reversalBusy){ setTimeout(()=>triggerReversal('과거 → 현재','resolve'), 200); playReversal(); } setTone('resolve'); }
+  else if(num===6){ if(!reversalBusy){ setTimeout(()=>triggerReversal('현재 → 미래','future'), 200); playReversal(); } setTone('future'); playTick('future'); }
+  else if(num===1){ setTone('crisis'); playTick('crisis'); }
   else if(num===7){ setTone('future'); playTick('future'); }
   else if(num===8){ setTone('default'); playTick('special'); }
+  else { setTone('resolve'); playTick('primary'); }
 
   updateNextHint(num);
 
-  // DRB 완성 체크 (n7 카드 닫힐 때)
-  if(num !== 7){
-    setTimeout(()=>{
-      if(isDRBComplete()&&!drbCompleteShown) showDRBComplete();
-    },900);
-  }
+  /* DRB 완성 체크는 위 setTimeout으로 통합 */
 }
 
 /* DRB 완성 */
@@ -1401,10 +1292,10 @@ function showDRBComplete(){
   flash.style.animation='do-flash 1.4s ease-out forwards';
 
   document.body.style.transition='background 0.5s ease';
-  document.body.style.background='radial-gradient(circle at 50% 50%,#041a14 0%,#020c0f 70%)';
+  document.body.style.background='radial-gradient(circle at 50% 50%,#0a1a00 0%,#00030a 70%)';
   setTimeout(()=>{
     document.body.style.transition='background 2.5s ease';
-    document.body.style.background='radial-gradient(circle at 50% 50%,#020e12 0%,#020c0f 70%)';
+    document.body.style.background='radial-gradient(circle at 50% 50%,#001020 0%,#00030a 70%)';
   },500);
 
   document.getElementById('drb-complete-overlay').classList.add('show');
@@ -1434,16 +1325,17 @@ function specialClosingTrigger(){
   if(closingPhase>0) return;
   closingPhase=1;
 
+  // 열려있는 카드 닫기
   if(activeNode){closeCard(activeNode);activeNode=null;}
 
-  // n8 방문 처리
+  // n10 방문 처리
   if(!visitedSequence.includes(8)) visitedSequence.push(8);
   document.getElementById('n8').classList.add('visited');
-  ['D','R','B','S'].forEach(syncDummies);
+  ['D','R','B'].forEach(syncDummies);
 
   function doClose(){
     document.body.style.transition='background 1.6s ease';
-    document.body.style.background='radial-gradient(circle at 50% 50%,#031820 0%,#020c0f 100%)';
+    document.body.style.background='radial-gradient(circle at 50% 50%,#001530 0%,#00030a 100%)';
     document.getElementById('tone-overlay').className='resolve';
     playClosingTransition();
 
@@ -1582,69 +1474,35 @@ const canvas=document.getElementById('neural-canvas');
 const ctx=canvas.getContext('2d');
 
 function getCenter(id){
-  const el=document.getElementById(id);if(!el)return{x:0,y:0};
-  const l=parseFloat(el.dataset.origLeft)||0;
-  const t=parseFloat(el.dataset.origTop)||0;
-  return{x:l+(el.offsetWidth||24)/2, y:t+(el.offsetHeight||24)/2};
+  var el=document.getElementById(id);if(!el)return{x:0,y:0};
+  var l=parseFloat(el.dataset.origLeft);
+  var t=parseFloat(el.dataset.origTop);
+  if(isNaN(l)) l=parseFloat(el.style.left)||0;
+  if(isNaN(t)) t=parseFloat(el.style.top)||0;
+  /* 더미는 16px, 일반은 offsetWidth 사용 */
+  var sz=el.offsetWidth||(el.classList.contains('dummy')?16:24);
+  return{x:l+sz/2, y:t+(el.offsetHeight||sz)/2};
 }
 
-/* ── 베지어 제어점 계산 — 유기적 곡선 수상돌기 ── */
-function bezierCP(x1,y1,x2,y2,curvature=0.38){
-  const dx=x2-x1, dy=y2-y1;
-  const mx=(x1+x2)/2, my=(y1+y2)/2;
-  const nx=-dy, ny=dx; // 법선 방향
-  const len=Math.sqrt(nx*nx+ny*ny)||1;
-  const offset=Math.sqrt(dx*dx+dy*dy)*curvature;
-  return {
-    cp1x: x1+dx*0.25 + (nx/len)*offset*0.5,
-    cp1y: y1+dy*0.25 + (ny/len)*offset*0.5,
-    cp2x: x1+dx*0.75 + (nx/len)*offset*0.5,
-    cp2y: y1+dy*0.75 + (ny/len)*offset*0.5,
-  };
-}
-
-/* 베지어 곡선 그리기 */
-function drawCurve(x1,y1,x2,y2,color,shadow,lw,blur,curvature=0.28){
-  const {cp1x,cp1y,cp2x,cp2y}=bezierCP(x1,y1,x2,y2,curvature);
-  ctx.beginPath();
-  ctx.moveTo(x1,y1);
-  ctx.bezierCurveTo(cp1x,cp1y,cp2x,cp2y,x2,y2);
+function drawLine(x1,y1,x2,y2,color,shadow,lw,blur){
+  ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);
   ctx.strokeStyle=color;ctx.lineWidth=lw;
   ctx.shadowColor=shadow;ctx.shadowBlur=blur;
   ctx.stroke();ctx.shadowBlur=0;
 }
 
-/* t(0~1)까지만 그리는 유기 성장 애니메이션 */
-function drawPartialCurve(x1,y1,x2,y2,t,color,shadow,lw,blur){
-  const {cp1x,cp1y,cp2x,cp2y}=bezierCP(x1,y1,x2,y2,0.28);
-  // 베지어 t 분할 (de Casteljau)
-  const steps=Math.max(8,Math.round(t*40));
-  ctx.beginPath();
-  ctx.moveTo(x1,y1);
-  for(let i=1;i<=steps;i++){
-    const s=t*(i/steps);
-    const mt=1-s;
-    const bx=mt*mt*mt*x1+3*mt*mt*s*cp1x+3*mt*s*s*cp2x+s*s*s*x2;
-    const by=mt*mt*mt*y1+3*mt*mt*s*cp1y+3*mt*s*s*cp2y+s*s*s*y2;
-    ctx.lineTo(bx,by);
-  }
-  // 끝점 세포핵 느낌
-  const mt=1-t;
-  const ex=mt*mt*mt*x1+3*mt*mt*t*cp1x+3*mt*t*t*cp2x+t*t*t*x2;
-  const ey=mt*mt*mt*y1+3*mt*mt*t*cp1y+3*mt*t*t*cp2y+t*t*t*y2;
-  ctx.strokeStyle=color;ctx.lineWidth=lw;
-  ctx.shadowColor=shadow;ctx.shadowBlur=blur;
-  ctx.stroke();
-  ctx.beginPath();ctx.arc(ex,ey,lw*2.2,0,Math.PI*2);
-  ctx.fillStyle=color;ctx.shadowBlur=blur*2;ctx.fill();
-  ctx.shadowBlur=0;
+function drawPartialLine(x1,y1,x2,y2,t,color,shadow,lw,blur){
+  const ex=x1+(x2-x1)*t,ey=y1+(y2-y1)*t;
+  drawLine(x1,y1,ex,ey,color,shadow,lw,blur);
+  ctx.beginPath();ctx.arc(ex,ey,lw*2,0,Math.PI*2);
+  ctx.fillStyle=color.replace('0.9','1');
+  ctx.shadowColor=shadow;ctx.shadowBlur=blur*1.8;
+  ctx.fill();ctx.shadowBlur=0;
 }
 
-/* 방사형 글로우 — 세포체 활성화 느낌 */
 function drawNodeGlow(cx,cy,color,r){
   const g=ctx.createRadialGradient(cx,cy,0,cx,cy,r);
-  g.addColorStop(0,color.replace('0.9','0.22'));
-  g.addColorStop(0.5,color.replace('0.9','0.08'));
+  g.addColorStop(0,color.replace('0.9','0.28'));
   g.addColorStop(1,color.replace('0.9','0'));
   ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);
   ctx.fillStyle=g;ctx.fill();
@@ -1656,421 +1514,192 @@ function resizeNeuralCanvas(){
 resizeNeuralCanvas();
 window.addEventListener('resize',resizeNeuralCanvas);
 
-/* ══════════════════════════════════════════
-   ∞ 단일 연속 궤도 렌더러
-   - 노드 방문 상태에 따라 궤도를 컬러 구간으로 그라디언트 렌더
-   - 모든 선이 하나의 부드러운 렘니스케이트 위에 존재
-══════════════════════════════════════════ */
-
-/* ∞ 궤도 위의 한 점 */
-function lemnPt(t){
-  const W=canvas.width,H=canvas.height;
-  const cx=W*0.50,cy=H*0.50,rx=W*0.36,ry=H*0.30;
-  const s=Math.sin(t),s2=s*s,d=1+s2;
-  return {x:cx+rx*Math.cos(t)/d, y:cy+ry*s*Math.cos(t)/d};
-}
-
-/* 궤도 위 t1→t2 구간을 부드럽게 그리기 */
-function drawOrbitSegment(t1,t2,color,shadow,lw,blur,steps){
-  steps=steps||80;
-  ctx.save();
-  ctx.beginPath();
-  for(let i=0;i<=steps;i++){
-    const t=t1+(t2-t1)*(i/steps);
-    const p=lemnPt(t);
-    i===0?ctx.moveTo(p.x,p.y):ctx.lineTo(p.x,p.y);
-  }
-  ctx.strokeStyle=color;
-  ctx.lineWidth=lw;
-  ctx.lineJoin='round';
-  ctx.lineCap='round';
-  ctx.shadowColor=shadow;
-  ctx.shadowBlur=blur;
-  ctx.stroke();
-  ctx.restore();
-}
-
-/* 미방문 기본 궤도 (전체 ∞, 희미한 점선) */
-function drawOrbitBase(){
-  const W=canvas.width,H=canvas.height;
-  const cx=W*0.50,cy=H*0.50,rx=W*0.36,ry=H*0.30;
-  const alpha=(0.055+0.025*Math.sin(drbGlowPhase*0.5)).toFixed(3);
-  ctx.save();
-  ctx.beginPath();
-  const STEPS=360;
-  for(let i=0;i<=STEPS;i++){
-    const t=(i/STEPS)*Math.PI*2-Math.PI;
-    const s=Math.sin(t),s2=s*s,d=1+s2;
-    const x=cx+rx*Math.cos(t)/d, y=cy+ry*s*Math.cos(t)/d;
-    i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
-  }
-  ctx.closePath();
-  ctx.setLineDash([4,14]);
-  ctx.lineDashOffset=-(drbGlowPhase*9%18);
-  ctx.strokeStyle='rgba(62,255,216,'+alpha+')';
-  ctx.lineWidth=0.9;
-  ctx.shadowBlur=0;
-  ctx.stroke();
-  ctx.setLineDash([]);
-  ctx.restore();
-}
-
-/* 각 단계별 t 범위 정의 (buildLayout t값과 동기화) */
-const PI=Math.PI;
-const ORBIT_SEGMENTS=[
-  // 좌 루프 상단: 과거(t=π) → 현재②③
-  {t1:PI,       t2:PI*0.65,  letter:'D', rev:false},
-  // 좌 루프 → 교차 → 하단: 현재③ → 실현(0) → 현재④⑤ → 과거(-π)
-  {t1:PI*0.65,  t2:0,        letter:'R', rev:false},
-  {t1:0,        t2:-PI,      letter:'R', rev:false},
-  // 우 루프: 실현(0) ↔ 미래⑥(-0.35π)
-  {t1:0,        t2:-PI*0.35, letter:'B', rev:false},
-  // 우 루프 하반: 미래⑦(0.35π) → 실현(0)
-  {t1:PI*0.35,  t2:0,        letter:'B', rev:false},
-];
-
-function drawMobiusOrbit(){
-  /* 1. 전체 기본 궤도 (항상 표시) */
-  drawOrbitBase();
-
-  /* 2. 방문된 구간을 컬러로 덮어씌우기 */
-  const glow=0.55+0.45*Math.sin(drbGlowPhase);
-
-  ORBIT_SEGMENTS.forEach(function(seg){
-    const col=LETTER_COLORS[seg.letter];
-    const complete=isLetterComplete(seg.letter);
-    const anyVis=LETTER_ALL[seg.letter].some(function(id){return isVisited(id);});
-    if(!anyVis) return;
-
-    var alpha, lw, blur;
-    if(complete){
-      alpha=(0.65+0.28*glow).toFixed(2);
-      lw=2.8; blur=16+10*glow;
-    } else {
-      alpha='0.55'; lw=2.2; blur=10;
-    }
-    const color=col.stroke.replace('0.9',alpha);
-    const shadow=col.shadow.replace('0.7',(0.4+0.3*glow).toFixed(2));
-    drawOrbitSegment(seg.t1,seg.t2,color,shadow,lw,blur,120);
-  });
-
-  /* 3. 실현(n8) 교차점 마커 */
-  const crossPt=lemnPt(0);
-  const ca=(0.12+0.1*Math.sin(drbGlowPhase*1.3)).toFixed(3);
-  ctx.save();
-  ctx.beginPath();ctx.arc(crossPt.x,crossPt.y,4.5,0,PI*2);
-  ctx.fillStyle='rgba(255,224,102,'+ca+')';
-  ctx.shadowColor='rgba(255,200,0,0.6)';ctx.shadowBlur=14;
-  ctx.fill();ctx.restore();
-
-  /* 4. 과거(n1) 마커 */
-  const pastPt=lemnPt(PI);
-  const pa=(0.1+0.07*Math.sin(drbGlowPhase*0.9)).toFixed(3);
-  ctx.save();
-  ctx.beginPath();ctx.arc(pastPt.x,pastPt.y,3.5,0,PI*2);
-  ctx.fillStyle='rgba(255,120,120,'+pa+')';
-  ctx.shadowColor='rgba(255,80,80,0.45)';ctx.shadowBlur=10;
-  ctx.fill();ctx.restore();
-
-  /* 5. 완성 시 — ∞ 전체 발광 */
-  if(isDRBComplete()){
-    const fa=(0.35+0.25*Math.sin(drbGlowPhase*0.8)).toFixed(3);
-    drawOrbitSegment(-PI,PI,'rgba(255,224,102,'+fa+')','rgba(255,200,0,0.3)',1.2,8,360);
-  }
-}
-
-/* ── ∞ 궤도 위 빛점 (신호 흐름 표현) ── */
-const ORBIT_SPARKS=[
-  {tOffset:0,      speed:0.008, color:'rgba(62,255,216,',  size:3.5},
-  {tOffset:Math.PI,speed:0.008, color:'rgba(179,136,255,', size:2.8},
-  {tOffset:Math.PI*0.5,speed:0.006, color:'rgba(255,200,0,', size:2.2},
-];
-let sparkT=0;
-
-function drawOrbitSparks(){
-  sparkT+=0.012;
-  ORBIT_SPARKS.forEach(function(spark,i){
-    // 방문된 구간에만 빛점 표시
-    const anyVisited=visitedSequence.length>0;
-    if(!anyVisited) return;
-
-    const t=((sparkT*spark.speed*80+spark.tOffset)%(Math.PI*2))-Math.PI;
-    const pt=lemnPt(t);
-    const pulse=0.6+0.4*Math.sin(sparkT*3+i*2.1);
-    const alpha=(0.7+0.3*pulse).toFixed(2);
-
-    ctx.save();
-    ctx.beginPath();
-    ctx.arc(pt.x,pt.y,spark.size*pulse,0,Math.PI*2);
-    ctx.fillStyle=spark.color+alpha+')';
-    ctx.shadowColor=spark.color+'0.8)';
-    ctx.shadowBlur=spark.size*5*pulse;
-    ctx.fill();
-    ctx.restore();
-
-    // 꼬리 효과 — 3점
-    for(let j=1;j<=3;j++){
-      const dt=0.06*j;
-      const tprev=t-dt*(spark.speed>0.007?1:-1);
-      const pp=lemnPt(tprev);
-      const ta=(0.25-j*0.07).toFixed(2);
-      ctx.save();
-      ctx.beginPath();
-      ctx.arc(pp.x,pp.y,spark.size*(1-j*0.25)*pulse,0,Math.PI*2);
-      ctx.fillStyle=spark.color+ta+')';
-      ctx.shadowBlur=0;
-      ctx.fill();
-      ctx.restore();
-    }
-  });
-}
-
 function drawLines(){
   ctx.clearRect(0,0,canvas.width,canvas.height);
-  drbGlowPhase+=0.018;
+  drbGlowPhase+=0.02;
+  const now=performance.now();
+  const EDGES={D:D_EDGES,R:R_EDGES,B:B_EDGES};
 
-  /* ── 1. ∞ 연속 궤도 (방문 상태 반영) ── */
-  drawMobiusOrbit();
-  drawOrbitSparks();
+  ['D','R','B'].forEach(letter=>{
+    const col=LETTER_COLORS[letter];
+    const complete=isLetterComplete(letter);
+    /* 이 그룹에 방문한 노드가 하나라도 있는지 */
+    const anyVisited=LETTER_MAP[letter].some(id=>{
+      const n=idToNum(id); return n&&visitedSequence.indexOf(n)!==-1;
+    });
 
-  /* ── 2. 완성 시 중앙 텍스트 ── */
-  if(isDRBComplete()&&!document.getElementById('drb-complete-overlay').classList.contains('show')){
-    const mcx=canvas.width*0.50, mcy=canvas.height*0.50+canvas.height*0.11;
-    ctx.font='700 '+Math.round(canvas.width*0.015)+'px sans-serif';
-    ctx.textAlign='center';
-    const fa=(0.5+0.38*Math.sin(drbGlowPhase*0.85)).toFixed(2);
-    ctx.fillStyle='rgba(255,224,102,'+fa+')';
-    ctx.shadowColor='rgba(255,200,0,0.8)';ctx.shadowBlur=20;
-    ctx.fillText('∞  과거 · 현재 · 미래 · 실현  ∞',mcx,mcy);
-    ctx.shadowBlur=0;
+    EDGES[letter].forEach(([a,b])=>{
+      const ca=getCenter(a),cb=getCenter(b);
+
+      if(!complete && !anyVisited){
+        /* 미방문 그룹 — 희미한 선 */
+        drawLine(ca.x,ca.y,cb.x,cb.y,'rgba(255,255,255,0.045)','transparent',1,0);
+        return;
+      }
+
+      const key=`${a}->${b}`;
+      const flow=flowingEdges.get(key);
+
+      /* 좌표 유효성 검사 — 0,0이면 레이아웃 미완성이므로 스킵 */
+      if(ca.x===0&&ca.y===0||cb.x===0&&cb.y===0) return;
+
+      if(complete){
+        /* 그룹 완성 — 항상 발광선 (flow 여부 무관) */
+        const p=0.6+0.4*Math.sin(drbGlowPhase);
+        const gs=col.stroke.replace('0.9',(0.7+0.3*p).toFixed(2));
+        const gh=col.shadow.replace('0.7',(0.5+0.4*p).toFixed(2));
+        if(flow&&!flow.done){
+          /* 완성 직후 성장 애니메이션 */
+          const t=Math.min(1,(now-flow.startTime)/FLOW_DUR);
+          const e=1-Math.pow(1-t,3);
+          drawPartialLine(ca.x,ca.y,cb.x,cb.y,e,col.stroke,col.shadow,5.5,22);
+          if(t>=1)flow.done=true;
+        } else {
+          drawLine(ca.x,ca.y,cb.x,cb.y,gs,gh,5.5,22+16*p);
+          drawNodeGlow(ca.x,ca.y,col.stroke,34+12*p);
+          drawNodeGlow(cb.x,cb.y,col.stroke,34+12*p);
+        }
+      } else if(flow&&!flow.done){
+        /* 미완성 — 성장 애니메이션 */
+        const t=Math.min(1,(now-flow.startTime)/FLOW_DUR);
+        const e=1-Math.pow(1-t,3);
+        drawPartialLine(ca.x,ca.y,cb.x,cb.y,e,col.stroke,col.shadow,4,18);
+        if(t>=1)flow.done=true;
+      } else if(anyVisited){
+        /* 방문 중 — 일반 발광선 */
+        drawLine(ca.x,ca.y,cb.x,cb.y,col.stroke,col.shadow,4,14);
+      }
+    });
+  });
+
+  // DRB 완성 — 브릿지 선 없음 (별자리 분리), ✦ 텍스트만 표시
+  if(isDRBComplete()){
+    if(!document.getElementById('drb-complete-overlay').classList.contains('show')){
+      const cx=canvas.width/2,cy=canvas.height-48;
+      ctx.font=`900 ${Math.round(canvas.width*0.022)}px sans-serif`;
+      ctx.textAlign='center';
+      ctx.fillStyle=`rgba(241,196,15,${(0.5+0.45*Math.sin(drbGlowPhase*0.9)).toFixed(2)})`;
+      ctx.shadowColor='rgba(241,196,15,0.8)';ctx.shadowBlur=20;
+      ctx.fillText('✦ D · R · B ✦',cx,cy);
+      ctx.shadowBlur=0;
+    }
   }
 
-  /* ─── 단계 레이블 — 뫼비우스 각 루프 중심에 고정 배치 ─── */
-  const W2=canvas.width, H2=canvas.height;
-  const lcx=W2*0.50, lcy=H2*0.50;
-  const lrx=W2*0.36, lry=H2*0.30;
-  const fs=Math.max(11,Math.round(W2*0.013));
-  ctx.font=`600 ${fs}px sans-serif`;
-
-  // 각 단계 레이블의 고정 위치 (∞ 궤도 내 대표 좌표)
-  const FIXED_LABELS=[
-    {letter:'D', label:'과거', tx:-lrx*0.60, ty:-lry*0.50},  // 좌측 루프 상단
-    {letter:'R', label:'현재', tx:-lrx*0.20, ty:0},           // 좌측 루프 중앙
-    {letter:'B', label:'미래', tx: lrx*0.10, ty:-lry*0.52},   // 우측 루프 상단
-    {letter:'S', label:'실현', tx: lrx*0.50, ty: lry*0.40},   // 우측 최외점 하단
-  ];
-
-  FIXED_LABELS.forEach(({letter,label,tx,ty})=>{
-    const col=LETTER_COLORS[letter];
-    const lx=lcx+tx, ly=lcy+ty;
-    const vis=LETTER_ALL[letter].some(id=>isVisited(id));
+  // D/R/B 레이블
+  const fs=Math.max(14,Math.round(canvas.width*0.018));
+  ctx.font=`900 ${fs}px sans-serif`;ctx.textAlign='center';
+  [{ids:LETTER_ALL.D,letter:'D',col:LETTER_COLORS.D},
+   {ids:LETTER_ALL.R,letter:'R',col:LETTER_COLORS.R},
+   {ids:LETTER_ALL.B,letter:'B',col:LETTER_COLORS.B}
+  ].forEach(({ids,letter,col})=>{
+    let minY=Infinity,sumX=0;
+    ids.forEach(id=>{const c=getCenter(id);if(c.y<minY)minY=c.y;sumX+=c.x;});
+    const lx=sumX/ids.length, ly=minY-28;
+    const vis=ids.some(id=>isVisited(id));
     const comp=isLetterComplete(letter);
-    const p=0.6+0.4*Math.sin(drbGlowPhase);
-    ctx.textAlign='center';
+    const p=0.6+0.4*Math.sin(drbGlowPhase*(letter==='D'?1:letter==='R'?1.1:1.2));
     if(comp){
-      ctx.fillStyle=col.stroke.replace('0.9',(0.85+0.12*p).toFixed(2));
-      ctx.shadowColor=col.shadow;ctx.shadowBlur=16+10*p;
+      ctx.fillStyle=col.stroke.replace('0.9',(0.88+0.12*p).toFixed(2));
+      ctx.shadowColor=col.shadow;ctx.shadowBlur=20+12*p;
     }else if(vis){
-      ctx.fillStyle=col.stroke.replace('0.9','0.5');
-      ctx.shadowColor=col.shadow.replace('0.7','0.25');ctx.shadowBlur=6;
+      ctx.fillStyle=col.stroke.replace('0.9','0.6');
+      ctx.shadowColor=col.shadow.replace('0.7','0.3');ctx.shadowBlur=8;
     }else{
-      ctx.fillStyle=col.stroke.replace('0.9','0.12');ctx.shadowBlur=0;
+      ctx.fillStyle='rgba(255,255,255,0.1)';ctx.shadowBlur=0;
     }
-    ctx.fillText(label,lx,ly);
-    ctx.shadowBlur=0;
+    ctx.fillText(letter,lx,ly);ctx.shadowBlur=0;
   });
 
   requestAnimationFrame(drawLines);
 }
 drawLines();
 
-/* ══════════════════════════════════════════════
-   세포막 배경 — 심해 유기체 멤브레인 패턴
-══════════════════════════════════════════════ */
+/* 파티클 — 우주 배경 */
 (()=>{
   const pc=document.getElementById('particle-canvas');
   const px=pc.getContext('2d');
-  let W,H;
-  const cells=[]; // 세포막 구조체
-  const spores=[]; // 미세 포자 (떠다니는 작은 점)
-  const dendrites=[]; // 수상돌기 배경 선
-
-  function resize(){
-    W=pc.width=window.innerWidth;
-    H=pc.height=window.innerHeight;
+  const pts=[];
+  function rsz(){
+    pc.width=window.innerWidth;
+    pc.height=window.innerHeight;
+    // 리사이즈 시 위치 재분산
+    pts.forEach(p=>{
+      if(p.x>pc.width)  p.x=Math.random()*pc.width;
+      if(p.y>pc.height) p.y=Math.random()*pc.height;
+    });
   }
-  resize();
-  window.addEventListener('resize',resize);
+  rsz();
+  window.addEventListener('resize',rsz);
 
-  /* ── 세포막 구조 생성 ── */
-  function makeCells(){
-    cells.length=0;
-    const count=Math.floor((W*H)/55000)+8;
-    for(let i=0;i<count;i++){
-      // ∞ 궤도 주변에 집중 분포 (70%) + 완전 랜덤 (30%)
-      let cx2,cy2;
-      if(Math.random()<0.70){
-        const t=(Math.random()-0.5)*Math.PI*2;
-        const s=Math.sin(t),s2=s*s,d=1+s2;
-        const rx2=W*0.36,ry2=H*0.30;
-        cx2=W*0.5+rx2*Math.cos(t)/d+(Math.random()-0.5)*W*0.18;
-        cy2=H*0.5+ry2*s*Math.cos(t)/d+(Math.random()-0.5)*H*0.18;
-      } else {
-        cx2=Math.random()*W; cy2=Math.random()*H;
-      }
-      cells.push({
-        x:cx2, y:cy2,
-        rx: 40+Math.random()*90,
-        ry: 25+Math.random()*55,
-        rot: Math.random()*Math.PI,
-        phase: Math.random()*Math.PI*2,
-        spd: 0.003+Math.random()*0.005,
-        vx:(Math.random()-0.5)*0.12,
-        vy:(Math.random()-0.5)*0.08,
-        alpha: 0.025+Math.random()*0.055,
-        // 색상: 청록 / 보라 / 암적
-        hue: Math.random()<0.55?'teal':Math.random()<0.6?'purple':'red',
-      });
-    }
+  // 별 파티클 생성 (3종: 소·중·대)
+  for(let i=0;i<180;i++){
+    const tier = i<120 ? 'small' : i<160 ? 'mid' : 'large';
+    pts.push({
+      x : Math.random()*pc.width,
+      y : Math.random()*pc.height,
+      r : tier==='small' ? Math.random()*0.9+0.4
+        : tier==='mid'   ? Math.random()*1.4+0.9
+        :                  Math.random()*2.2+1.6,
+      vx: (Math.random()-0.5)*(tier==='large'?0.08:0.18),
+      vy: (Math.random()-0.5)*(tier==='large'?0.06:0.14),
+      a : Math.random()*Math.PI*2,
+      spd: Math.random()*0.008+0.006,
+      // 색상 팔레트: 청록/흰/연보라
+      hue: Math.random()<0.6 ? 'cyan'
+         : Math.random()<0.5 ? 'white' : 'purple',
+      tier
+    });
   }
 
-  /* ── 배경 수상돌기 (매우 얇은 유기 곡선) ── */
-  function makeDendrites(){
-    dendrites.length=0;
-    for(let i=0;i<18;i++){
-      const sx=Math.random()*W, sy=Math.random()*H;
-      const branches=[];
-      let cx=sx,cy=sy;
-      for(let b=0;b<6+Math.floor(Math.random()*6);b++){
-        const angle=Math.random()*Math.PI*2;
-        const len=30+Math.random()*80;
-        branches.push({
-          x1:cx,y1:cy,
-          x2:cx+Math.cos(angle)*len,
-          y2:cy+Math.sin(angle)*len,
-          cp1x:cx+Math.cos(angle+0.6)*len*0.5,
-          cp1y:cy+Math.sin(angle+0.6)*len*0.5,
-        });
-        cx+=Math.cos(angle)*len*0.3;
-        cy+=Math.sin(angle)*len*0.3;
-      }
-      dendrites.push({
-        branches,
-        alpha:0.03+Math.random()*0.06,
-        hue:Math.random()<0.6?'teal':'purple',
-        phase:Math.random()*Math.PI*2,
-        spd:0.002+Math.random()*0.003,
-      });
-    }
-  }
-
-  /* ── 포자 ── */
-  function makeSpores(){
-    spores.length=0;
-    for(let i=0;i<60;i++){
-      spores.push({
-        x:Math.random()*W, y:Math.random()*H,
-        r:0.6+Math.random()*2.2,
-        vx:(Math.random()-0.5)*0.15,
-        vy:(Math.random()-0.5)*0.1,
-        phase:Math.random()*Math.PI*2,
-        spd:0.01+Math.random()*0.015,
-        hue:Math.random()<0.6?'teal':Math.random()<0.5?'purple':'amber',
-      });
-    }
-  }
-
-  makeCells(); makeDendrites(); makeSpores();
-
-  /* ── 색상 헬퍼 ── */
-  function cellColor(hue,a){
-    if(hue==='teal')   return `rgba(62,255,216,${a.toFixed(3)})`;
-    if(hue==='purple') return `rgba(179,136,255,${a.toFixed(3)})`;
-    return                    `rgba(255,100,100,${a.toFixed(3)})`;
-  }
-
-  let t=0;
   function anim(){
-    px.clearRect(0,0,W,H);
-    t+=0.008;
+    px.clearRect(0,0,pc.width,pc.height);
+    pts.forEach(p=>{
+      p.x+=p.vx; p.y+=p.vy; p.a+=p.spd;
+      if(p.x<0)p.x=pc.width; if(p.x>pc.width)p.x=0;
+      if(p.y<0)p.y=pc.height; if(p.y>pc.height)p.y=0;
 
-    /* 1. 배경 수상돌기 — 얇은 유기 곡선 */
-    dendrites.forEach(d=>{
-      d.phase+=d.spd;
-      const a=d.alpha*(0.6+0.4*Math.sin(d.phase));
-      px.save();
-      px.strokeStyle=d.hue==='teal'?`rgba(62,255,216,${a})`:`rgba(179,136,255,${a})`;
-      px.lineWidth=0.5;
-      d.branches.forEach(b=>{
-        px.beginPath();
-        px.moveTo(b.x1,b.y1);
-        px.quadraticCurveTo(b.cp1x,b.cp1y,b.x2,b.y2);
-        px.stroke();
-      });
-      px.restore();
+      const flicker = 0.55 + 0.45*Math.sin(p.a);
+
+      // 색상별 rgba
+      let color;
+      if(p.hue==='cyan')   color=`rgba(0,242,254,${(flicker*0.75).toFixed(2)})`;
+      else if(p.hue==='white') color=`rgba(210,235,255,${(flicker*0.65).toFixed(2)})`;
+      else                 color=`rgba(192,132,252,${(flicker*0.6).toFixed(2)})`;
+
+      // 큰 별: 십자 글로우
+      if(p.tier==='large'){
+        px.save();
+        px.shadowColor = p.hue==='cyan' ? 'rgba(0,242,254,0.9)'
+                       : p.hue==='white'? 'rgba(200,230,255,0.8)'
+                       :                  'rgba(192,132,252,0.9)';
+        px.shadowBlur = 8+6*flicker;
+        px.beginPath();px.arc(p.x,p.y,p.r,0,Math.PI*2);
+        px.fillStyle=color; px.fill();
+        // 십자 광선
+        const gl=p.r*3.5*flicker;
+        const grd=px.createLinearGradient(p.x-gl,p.y,p.x+gl,p.y);
+        grd.addColorStop(0,'transparent');
+        grd.addColorStop(0.5,color);
+        grd.addColorStop(1,'transparent');
+        px.beginPath();px.rect(p.x-gl,p.y-0.5,gl*2,1);
+        px.fillStyle=grd;px.fill();
+        const grd2=px.createLinearGradient(p.x,p.y-gl,p.x,p.y+gl);
+        grd2.addColorStop(0,'transparent');
+        grd2.addColorStop(0.5,color);
+        grd2.addColorStop(1,'transparent');
+        px.beginPath();px.rect(p.x-0.5,p.y-gl,1,gl*2);
+        px.fillStyle=grd2;px.fill();
+        px.restore();
+      } else {
+        // 소·중: 단순 원 + 미세 글로우
+        px.save();
+        px.shadowColor = p.hue==='cyan'?'rgba(0,242,254,0.6)':'rgba(200,220,255,0.5)';
+        px.shadowBlur  = p.tier==='mid' ? 4+3*flicker : 2;
+        px.beginPath();px.arc(p.x,p.y,p.r,0,Math.PI*2);
+        px.fillStyle=color; px.fill();
+        px.restore();
+      }
     });
-
-    /* 2. 세포막 — 타원형 윤곽 */
-    cells.forEach(cell=>{
-      cell.x+=cell.vx; cell.y+=cell.vy;
-      cell.phase+=cell.spd;
-      if(cell.x<-150) cell.x=W+150;
-      if(cell.x>W+150) cell.x=-150;
-      if(cell.y<-100) cell.y=H+100;
-      if(cell.y>H+100) cell.y=-100;
-
-      const pulse=0.65+0.35*Math.sin(cell.phase);
-      const a=cell.alpha*pulse;
-
-      px.save();
-      px.translate(cell.x,cell.y);
-      px.rotate(cell.rot+t*0.02);
-
-      // 외막
-      px.beginPath();
-      px.ellipse(0,0,cell.rx,cell.ry,0,0,Math.PI*2);
-      px.strokeStyle=cellColor(cell.hue,a*1.8);
-      px.lineWidth=0.6;
-      px.stroke();
-
-      // 내막 (약간 작게)
-      px.beginPath();
-      px.ellipse(0,0,cell.rx*0.65,cell.ry*0.65,0,0,Math.PI*2);
-      px.strokeStyle=cellColor(cell.hue,a*0.7);
-      px.lineWidth=0.4;
-      px.setLineDash([4,8]);
-      px.stroke();
-      px.setLineDash([]);
-
-      // 핵 (중심 미세 발광)
-      const gr=px.createRadialGradient(0,0,0,0,0,cell.ry*0.3);
-      gr.addColorStop(0,cellColor(cell.hue,a*1.2));
-      gr.addColorStop(1,'transparent');
-      px.beginPath();
-      px.ellipse(0,0,cell.rx*0.3,cell.ry*0.3,0,0,Math.PI*2);
-      px.fillStyle=gr;
-      px.fill();
-
-      px.restore();
-    });
-
-    /* 3. 포자 — 미세 발광 입자 */
-    spores.forEach(s=>{
-      s.x+=s.vx; s.y+=s.vy; s.phase+=s.spd;
-      if(s.x<0)s.x=W; if(s.x>W)s.x=0;
-      if(s.y<0)s.y=H; if(s.y>H)s.y=0;
-      const fl=0.5+0.5*Math.sin(s.phase);
-      let sc;
-      if(s.hue==='teal')   sc=`rgba(62,255,216,${(fl*0.6).toFixed(2)})`;
-      else if(s.hue==='purple') sc=`rgba(179,136,255,${(fl*0.5).toFixed(2)})`;
-      else                      sc=`rgba(255,200,100,${(fl*0.45).toFixed(2)})`;
-      px.save();
-      px.shadowColor=sc; px.shadowBlur=s.r*4*fl;
-      px.beginPath();px.arc(s.x,s.y,s.r,0,Math.PI*2);
-      px.fillStyle=sc;px.fill();
-      px.restore();
-    });
-
     requestAnimationFrame(anim);
   }
   anim();
@@ -2078,13 +1707,15 @@ drawLines();
 
 /* 키보드
    ── 상태별 동작 ────────────────────────────────────────────
-   phase A : 카드 닫힌 상태 → 다음 노드 열기 (1~8)
-   phase B : DRB 오버레이 중 → Space/→ → n8 열기
-   phase C : n8 카드 열림   → Space/→ → 클로징
-   phase D : closingPhase >= 2 → 완전 무시
+   phase A : 카드 닫힌 상태, keySeq 1~9  → 다음 노드 열기
+   phase A': 카드 열린 상태, keySeq 1~9  → 카드 닫기만 (진행 안 함)
+   phase B : DRB 오버레이 중             → Space/→ → n10 열기
+   phase C : n10 카드 열림              → Space/→ → 클로징
+   phase D : closingPhase >= 2          → 완전 무시
    ─────────────────────────────────────────────────────── */
 let keySeq=1;
 
+/* 카드 열린 상태에서 이전/다음 노드로 바로 이동 */
 function navToNode(targetNum){
   if(targetNum<1||targetNum>8) return;
   if(activeNode){ closeCard(activeNode); activeNode=null; }
@@ -2097,20 +1728,23 @@ function navToNode(targetNum){
 document.addEventListener('keydown',e=>{
   if(e.key===' ') e.preventDefault();
 
+  // ESC — 영상 오버레이 닫기
   if(e.key==='Escape'){
     const vov = document.getElementById('video-overlay');
     if(vov && vov.classList.contains('show')){ hideVideoOverlay(); return; }
   }
 
+  // phase D
   if(closingPhase>=2) return;
 
   const fwd = (e.key==='ArrowRight'||e.key==='ArrowDown'||e.key===' ');
   const bwd = (e.key==='ArrowLeft'||e.key==='ArrowUp');
 
+  // 영상 오버레이 열려있으면 키 무시
   const vov = document.getElementById('video-overlay');
   if(vov && vov.classList.contains('show')) return;
 
-  // phase C: n8 카드 열림 → 클로징
+  // phase C: n10 카드 열림
   if(activeNode && activeNode.id==='n8'){
     if(fwd){
       closeCard(activeNode); activeNode=null;
@@ -2121,7 +1755,7 @@ document.addEventListener('keydown',e=>{
     return;
   }
 
-  // phase B: DRB 오버레이 표시 중 → n8 열기
+  // phase B: DRB 오버레이 표시 중
   if(drbCompleteShown && document.getElementById('drb-complete-overlay').classList.contains('show')){
     if(fwd){ hideDRBComplete(()=>{ toggleNode(8); keySeq=9; }); }
     return;
@@ -2139,13 +1773,11 @@ document.addEventListener('keydown',e=>{
         }, 550);
         return;
       }
-      if(cur===1){
-        // 과거→현재 전환 연출
+      if(cur === 1){
         closeCard(activeNode); activeNode=null;
         setTimeout(()=>triggerReversal('과거 → 현재','resolve'), 300);
         setTimeout(()=>{ toggleNode(2); keySeq=3; }, 2500);
-      } else if(cur===5){
-        // 현재→미래 전환 연출
+      } else if(cur === 5){
         closeCard(activeNode); activeNode=null;
         setTimeout(()=>triggerReversal('현재 → 미래','future'), 300);
         setTimeout(()=>{ toggleNode(6); keySeq=7; }, 2500);
@@ -2184,25 +1816,22 @@ document.getElementById('drb-complete-overlay').addEventListener('click',()=>{
 });
 
 /* 초기화 */
-/* 레이아웃 초기화 — rAF 이중 보장으로 offsetWidth 타이밍 문제 해결 */
+/* 레이아웃 초기화 — rAF 이중으로 DOM 완전 준비 후 실행 */
 function initLayout(){
-  requestAnimationFrame(()=>requestAnimationFrame(()=>{
-    applyLayout();
-    updateNextHint(0);
-  }));
-}
-if(document.readyState==='loading'){
-  document.addEventListener('DOMContentLoaded', initLayout);
-} else {
-  initLayout();
+  requestAnimationFrame(function(){
+    requestAnimationFrame(function(){
+      applyLayout();
+      updateNextHint(0);
+    });
+  });
 }
 window.addEventListener('load', initLayout);
-window.addEventListener('resize',applyLayout);
+window.addEventListener('resize', applyLayout);
 
 /* 키보드 힌트 (상시 표시, 희미) */
 const kh=document.createElement('div');
 kh.id='key-hint-bar';
-kh.style.cssText='position:fixed;bottom:38px;left:50%;transform:translateX(-50%);color:rgba(62,255,216,0.28);font-size:0.62rem;letter-spacing:3px;z-index:999;pointer-events:none;text-transform:uppercase;transition:opacity 2s ease;white-space:nowrap;';
+kh.style.cssText='position:fixed;bottom:38px;left:50%;transform:translateX(-50%);color:rgba(0,242,254,0.32);font-size:0.62rem;letter-spacing:3px;z-index:999;pointer-events:none;text-transform:uppercase;transition:opacity 2s ease;white-space:nowrap;';
 kh.textContent='← → 방향키 또는 SPACE 로 이동 가능합니다';
 document.body.appendChild(kh);
 setTimeout(()=>kh.style.opacity='0',6000);
@@ -2216,7 +1845,7 @@ setTimeout(()=>kh.remove(),8000);
 
 /* ── BGM 오디오 엘리먼트 생성 ── */
 const bgmAudio = new Audio();
-bgmAudio.src    = 'deep.mp3';
+bgmAudio.src    = 'space.mp3';
 bgmAudio.loop    = true;
 bgmAudio.volume  = 0;
 bgmAudio.preload = 'auto';
@@ -2341,7 +1970,7 @@ DRB에서 지식이 어떻게 관리되고, 어떻게 손실되고 있는지를 
 
 이건 개인의 역량 문제가 아닙니다. 구조의 문제입니다.`,
     next: '02 · 기술',
-    tip: '"구조의 문제" — 강하게, 단호하게. 질문을 유발하는 톤으로.'
+    tip: '"구조의 문제" — 강하게, 단호하게.'
   },
   2: {
     title: '02 · 기술',
@@ -2352,18 +1981,18 @@ DRB에서 지식이 어떻게 관리되고, 어떻게 손실되고 있는지를 
 
 데이터가 외부로 나가지 않는다는 뜻입니다.`,
     next: '03 · 수집',
-    tip: '"외부로 나가지 않는다" — 보안이 중요한 임원에게 핵심 포인트.'
+    tip: '"외부로 나가지 않는다" — 보안 민감한 임원에게 핵심.'
   },
   3: {
     title: '03 · 수집',
     phase: '🔵 현재 — 2025년 11월 검증',
-    script: `시스템을 만드는 것보다 데이터를 구성하는것이 더 어렵습니다.
+    script: `시스템을 만드는 것보다 현장에 맞추는 것이 더 어렵습니다.
 
 11월, 실제 담당자들과 함께 업무 FAQ를 정리하고 팀 내 테스트를 진행했습니다.
 
 좋은 피드백도, 나쁜 피드백도 — 전부 학습 데이터가 됩니다.`,
     next: '04 · 베타',
-    tip: '"나쁜 피드백도 데이터" — 학습 구조의 강점. 자신 있게 말할 것.'
+    tip: '"나쁜 피드백도 데이터" — 학습 구조의 강점.'
   },
   4: {
     title: '04 · 베타',
@@ -2374,7 +2003,7 @@ DRB에서 지식이 어떻게 관리되고, 어떻게 손실되고 있는지를 
 
 개념 증명이 아닙니다. 운영 중인 시스템입니다.`,
     next: '05 · 사이클',
-    tip: '"운영 중인 시스템" — 마지막 문장 끊어서 읽기. 강조.'
+    tip: '"운영 중인 시스템" — 끊어서 읽기.'
   },
   5: {
     title: '05 · 사이클',
@@ -2383,20 +2012,20 @@ DRB에서 지식이 어떻게 관리되고, 어떻게 손실되고 있는지를 
 
 사용 → 피드백 → 재학습 → 정밀도 향상. 이 사이클이 자동으로 돌아갑니다.
 
-별도의 비용 없이 DRB에 맞게 계속 진화합니다.`,
+초기 투자 이후 별도 비용 없이 DRB에 맞게 계속 진화합니다.`,
     next: '06 · 변화',
-    tip: '"초기 투자 이후" — 임원 관심사는 비용 구조. 이 문장이 핵심.'
+    tip: '"초기 투자 이후" — 비용 구조. 이 문장이 핵심.'
   },
   6: {
     title: '06 · 변화',
     phase: '🟣 미래 — 조직 역량의 재정의',
-    script: `담당자만 알던 정보를, 신입도 즉시 꺼낼 수 있게 됩니다.
+    script: `10년 경력 담당자만 알던 정보를, 신입도 즉시 꺼낼 수 있게 됩니다.
 
 담당자는 질문 응대 대신 판단과 협상에 집중합니다.
 
 같은 인원으로 더 높은 가치를 만들어낼 수 있습니다.`,
     next: '07 · 미래',
-    tip: '"같은 인원으로" — 이 한 문장이 ROI 논리. 멈추고 강조할 것.'
+    tip: '"같은 인원으로" — ROI 논리. 멈추고 강조.'
   },
   7: {
     title: '07 · 미래',
@@ -2407,7 +2036,7 @@ DRB에서 지식이 어떻게 관리되고, 어떻게 손실되고 있는지를 
 
 이 구조가 완성되면 — 지식의 손실은 구조적으로 불가능해집니다.`,
     next: '08 · 실현 (시연)',
-    tip: '"구조적으로 불가능" — 강한 클로징 워딩. 자신감 있게.'
+    tip: '"구조적으로 불가능" — 강한 클로징. 자신감 있게.'
   },
   8: {
     title: '08 · 실현',
@@ -2416,7 +2045,7 @@ DRB에서 지식이 어떻게 관리되고, 어떻게 손실되고 있는지를 
 
 설명이 아닌 — 작동하는 시스템을 직접 확인하시기 바랍니다.`,
     next: '시연 스크립트로 이동 →',
-    tip: '짧게 말하고 바로 시연. 말이 많으면 임팩트가 줄어든다.'
+    tip: '짧게 말하고 바로 시연.'
   },
   9: {
     title: '시연 · 클로징',
@@ -2425,8 +2054,6 @@ DRB에서 지식이 어떻게 관리되고, 어떻게 손실되고 있는지를 
       {
         btn: '📦 시연 1 · 수출 포장 계산',
         script: `해외영업팀에서 매일 반복되는 질문입니다. 전동벨트 수출 시 최적 포장 수량.
-
-지금 LOGIBOT에 물어보겠습니다.
 
 (답변 대기 — 침묵 유지)
 
@@ -2441,7 +2068,7 @@ DRB에서 지식이 어떻게 관리되고, 어떻게 손실되고 있는지를 
 담당자 경험 없이도 — 시스템이 판단합니다.
 
 (답변 대기 — 침묵 유지)`,
-        tip: '"담당자 경험 없이도" — 임원에게 인력 의존도 해소의 증거.'
+        tip: '"담당자 경험 없이도" — 인력 의존도 해소의 증거.'
       },
       {
         btn: '👤 시연 3 · 신입 온보딩',
@@ -2534,7 +2161,7 @@ body{
   padding:12px 20px;display:flex;align-items:center;justify-content:space-between;
   flex-shrink:0;
 }
-.logo{font-size:11px;font-weight:700;color:#3effd8;letter-spacing:3px;font-family:monospace}
+.logo{font-size:11px;font-weight:700;color:#00f2fe;letter-spacing:3px;font-family:monospace}
 .timer{font-family:monospace;font-size:22px;font-weight:700;color:#f1c40f;letter-spacing:2px}
 .timer.warn{color:#ff6b6b;animation:blink 1s ease-in-out infinite}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:0.4}}
@@ -2546,7 +2173,7 @@ body{
   border-radius:20px;letter-spacing:1px;margin-bottom:6px;
 }
 .phase-past  {background:rgba(255,107,107,0.12);color:#ff6b6b;border:1px solid rgba(255,107,107,0.3)}
-.phase-present{background:rgba(62,255,216,0.1);color:#3effd8;border:1px solid rgba(62,255,216,0.3)}
+.phase-present{background:rgba(0,242,254,0.1);color:#00f2fe;border:1px solid rgba(0,242,254,0.3)}
 .phase-future{background:rgba(192,132,252,0.1);color:#c084fc;border:1px solid rgba(192,132,252,0.3)}
 .phase-demo  {background:rgba(241,196,15,0.1);color:#f1c40f;border:1px solid rgba(241,196,15,0.3)}
 
@@ -2562,7 +2189,7 @@ body{
   border-radius:10px;padding:16px;
   font-size:14px;line-height:2;color:#d0d8e8;
   white-space:pre-wrap;word-break:keep-all;
-  border-left:3px solid rgba(62,255,216,0.7);
+  border-left:3px solid #00f2fe;
 }
 
 .tip-box{
@@ -2599,8 +2226,8 @@ body{
   width:7px;height:7px;border-radius:50%;
   background:rgba(255,255,255,0.15);transition:background 0.3s;
 }
-.node-dot.done{background:rgba(62,255,216,0.55)}
-.node-dot.active{background:#3effd8;box-shadow:0 0 8px rgba(62,255,216,0.8)}
+.node-dot.done{background:rgba(0,242,254,0.6)}
+.node-dot.active{background:#00f2fe;box-shadow:0 0 6px #00f2fe}
 </style>
 </head>
 <body>
@@ -2648,9 +2275,9 @@ function renderStep(data, stepIdx){
   const btnHtml = data.steps.map((s, i) => \`
     <button onclick="goStep(\${i})"
       style="width:100%;text-align:left;padding:9px 14px;margin-bottom:6px;
-        border-radius:8px;border:1px solid \${i===stepIdx ? 'rgba(62,255,216,0.6)' : 'rgba(255,255,255,0.08)'};
-        background:\${i===stepIdx ? 'rgba(62,255,216,0.1)' : 'transparent'};
-        color:\${i===stepIdx ? '#3effd8' : 'rgba(255,255,255,0.4)'};
+        border-radius:8px;border:1px solid \${i===stepIdx ? 'rgba(0,242,254,0.6)' : 'rgba(255,255,255,0.08)'};
+        background:\${i===stepIdx ? 'rgba(0,242,254,0.1)' : 'transparent'};
+        color:\${i===stepIdx ? '#00f2fe' : 'rgba(255,255,255,0.4)'};
         font-size:13px;font-weight:\${i===stepIdx ? '700' : '400'};
         cursor:pointer;font-family:inherit;transition:0.2s;">
       \${i===stepIdx ? '▶ ' : ''}\${s.btn}
@@ -2681,11 +2308,11 @@ function render(nodeNum){
   const data = SCRIPTS[nodeNum] || SCRIPTS[0];
   const content = document.getElementById('content');
 
-  /* 9번(클로징) — 단계별 버튼 방식 */
+  /* 11번 — 단계별 버튼 방식 */
   if(nodeNum === 9 && data.steps){
     currentStep = 0;
     renderStep(data, 0);
-    /* 노드 인디케이터 — 전부 done */
+    /* 노드 인디케이터 */
     for(let i=1;i<=8;i++){
       const dot = document.getElementById('pdot-'+i);
       if(!dot) continue;
@@ -2709,7 +2336,7 @@ function render(nodeNum){
   for(let i=1;i<=8;i++){
     const dot = document.getElementById('pdot-'+i);
     if(!dot) continue;
-    dot.className='node-dot';
+    dot.className = 'node-dot';
     if(i < nodeNum) dot.classList.add('done');
     else if(i === nodeNum) dot.classList.add('active');
   }
