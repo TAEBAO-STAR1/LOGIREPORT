@@ -7,26 +7,47 @@
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --primary:#00f2fe;--special:#f1c40f;--crisis:#ff6b6b;--future:#c084fc;
-  --card-bg:rgba(3,8,20,0.99);
+  /* 심해 발광 팔레트 */
+  --primary:#3effd8;       /* 청록 발광 — 현재 */
+  --crisis:#ff7c7c;        /* 산호 빨강 — 과거 */
+  --future:#b388ff;        /* 연보라 — 미래 */
+  --special:#ffe066;       /* 황금 — 실현 */
+  --card-bg:rgba(2,10,14,0.97);
+
+  /* 배경 심층 컬러 */
+  --deep-bg:#020c0f;
+  --cell-glow:rgba(62,255,216,0.06);
+  --membrane:#0d2f2a;
 }
-html,body{width:100%;height:100%;overflow:hidden;background:#00030a;color:#fff;
-  font-family:'Pretendard','Apple SD Gothic Neo','Malgun Gothic',sans-serif;}
+html,body{
+  width:100%;height:100%;overflow:hidden;
+  background:var(--deep-bg);color:#d8f0ec;
+  font-family:'Pretendard','Apple SD Gothic Neo','Malgun Gothic',sans-serif;
+}
 
 #particle-canvas,#neural-canvas{position:fixed;inset:0;pointer-events:none;}
-#particle-canvas{z-index:0;}
-#neural-canvas{z-index:1;}
+#particle-canvas{z-index:0;}  /* 세포막 배경 */
+#neural-canvas{z-index:1;}    /* 뉴런 연결선 */
 
 /* 분위기 오버레이 */
-#tone-overlay{position:fixed;inset:0;z-index:2;pointer-events:none;opacity:0;transition:all 2s ease;}
-#tone-overlay.crisis{background:radial-gradient(ellipse at 50% 85%,rgba(200,20,20,0.35) 0%,transparent 65%);opacity:1;}
-#tone-overlay.resolve{background:radial-gradient(ellipse at 50% 15%,rgba(0,180,220,0.2) 0%,transparent 60%);opacity:1;}
-#tone-overlay.future{background:radial-gradient(ellipse at 50% 50%,rgba(192,132,252,0.18) 0%,transparent 65%);opacity:1;}
+#tone-overlay{position:fixed;inset:0;z-index:2;pointer-events:none;opacity:0;transition:all 2.5s ease;}
+#tone-overlay.crisis{
+  background:radial-gradient(ellipse at 20% 50%,rgba(255,80,80,0.18) 0%,transparent 60%);
+  opacity:1;
+}
+#tone-overlay.resolve{
+  background:radial-gradient(ellipse at 50% 50%,rgba(62,255,216,0.1) 0%,transparent 65%);
+  opacity:1;
+}
+#tone-overlay.future{
+  background:radial-gradient(ellipse at 80% 50%,rgba(179,136,255,0.15) 0%,transparent 60%);
+  opacity:1;
+}
 
 /* 반전 플래시 — 3→4 서사 전환용 */
 #reversal-flash{
   position:fixed;inset:0;z-index:450;pointer-events:none;opacity:0;
-  background:radial-gradient(circle at 50% 50%,rgba(0,242,254,0.18) 0%,transparent 70%);
+  background:radial-gradient(circle at 50% 50%,rgba(62,255,216,0.14) 0%,transparent 70%);
 }
 @keyframes reversal-anim{0%{opacity:0;}15%{opacity:1;}100%{opacity:0;}}
 
@@ -41,212 +62,259 @@ html,body{width:100%;height:100%;overflow:hidden;background:#00030a;color:#fff;
 }
 #main-title .word{
   font-size:clamp(1.9rem,3.6vw,3.1rem);font-weight:900;letter-spacing:0.35em;
-  background:linear-gradient(135deg,#fff 0%,#00f2fe 55%,#4facfe 100%);
+  background:linear-gradient(135deg,#a8ffee 0%,#3effd8 45%,#7fffda 100%);
   -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
-  filter:drop-shadow(0 0 20px rgba(0,242,254,0.5));line-height:1;
+  filter:drop-shadow(0 0 28px rgba(62,255,216,0.55));line-height:1;
 }
 #main-title .sub{
-  font-size:clamp(0.52rem,0.82vw,0.7rem);letter-spacing:0.42em;color:rgba(0,242,254,0.5);
+  font-size:clamp(0.52rem,0.82vw,0.7rem);letter-spacing:0.42em;
+  color:rgba(62,255,216,0.45);
   text-transform:uppercase;margin-top:5px;display:block;
 }
 #main-title::after{
   content:'';display:block;width:60%;height:1px;margin:8px auto 0;
-  background:linear-gradient(to right,transparent,rgba(0,242,254,0.4),transparent);
+  background:linear-gradient(to right,transparent,rgba(62,255,216,0.3),transparent);
 }
 
 /* 리셋 버튼 */
 .back-btn{
   position:fixed;top:22px;left:22px;z-index:2000;padding:8px 20px;
-  border:1px solid var(--primary);background:rgba(0,242,254,0.08);color:var(--primary);
+  border:1px solid rgba(62,255,216,0.5);background:rgba(62,255,216,0.06);color:var(--primary);
   border-radius:30px;cursor:pointer;font-size:0.8rem;font-weight:700;
   backdrop-filter:blur(10px);transition:0.3s;
 }
-.back-btn:hover{background:var(--primary);color:#000;box-shadow:0 0 14px var(--primary);}
+.back-btn:hover{background:rgba(62,255,216,0.15);color:var(--primary);box-shadow:0 0 16px rgba(62,255,216,0.4);}
 
-/* ═══════════ 노드 ═══════════ */
+/* ═══════════════════════════════
+   뉴런 노드 — 세포체 스타일
+═══════════════════════════════ */
 .neuron-node{
-  position:absolute;width:24px;height:24px;
-  background:#0a1828;border:2px solid var(--primary);border-radius:50%;
-  z-index:10;cursor:pointer;display:flex;align-items:center;overflow:visible;
-  transition:box-shadow 0.4s ease,background 0.4s ease,border-color 0.4s ease;
+  position:absolute;
+  /* 세포체: 원형, 3겹 구조 */
+  width:26px;height:26px;border-radius:50%;
+  background:radial-gradient(circle at 38% 35%,#0d2e2a 0%,#040e0c 100%);
+  border:1.5px solid var(--primary);
+  z-index:10;cursor:pointer;
+  display:flex;align-items:center;overflow:visible;
+  /* 발광 효과 */
+  box-shadow:0 0 8px rgba(62,255,216,0.25),inset 0 0 6px rgba(62,255,216,0.08);
+  transition:box-shadow 0.5s ease,background 0.5s ease,border-color 0.5s ease;
+}
+/* 세포 핵 — ::after 로 내부 발광점 */
+.neuron-node::after{
+  content:'';position:absolute;
+  width:7px;height:7px;border-radius:50%;
+  top:50%;left:50%;transform:translate(-50%,-50%);
+  background:rgba(62,255,216,0.55);
+  box-shadow:0 0 6px rgba(62,255,216,0.8);
+  pointer-events:none;transition:background 0.5s,box-shadow 0.5s;
 }
 .neuron-node.dummy{
-  width:11px;height:11px;background:rgba(20,40,55,0.7);
-  border-width:1.5px;opacity:0.45;cursor:default;pointer-events:none;
+  width:10px;height:10px;
+  background:rgba(10,28,24,0.6);
+  border-width:1px;opacity:0.35;
+  cursor:default;pointer-events:none;
+  box-shadow:none;
 }
+.neuron-node.dummy::after{
+  width:3px;height:3px;
+  background:rgba(62,255,216,0.3);
+  box-shadow:none;
+}
+
+/* 라벨 */
 .node-info{
-  position:absolute;left:34px;
+  position:absolute;left:36px;
   display:flex;flex-direction:column;white-space:nowrap;pointer-events:none;
 }
 .dummy .node-info{display:none;}
-
-/* ★ 라벨 크기 키움 — 프로젝터 대응 */
 .node-num{
   font-weight:900;color:var(--primary);
-  font-size:clamp(1.5rem,2.2vw,2.1rem);line-height:1;
+  font-size:clamp(1.4rem,2vw,2rem);line-height:1;
 }
 .node-key{
-  font-size:clamp(0.68rem,1vw,0.92rem);color:rgba(255,255,255,0.72);
-  letter-spacing:2.5px;margin-top:4px;text-transform:uppercase;font-weight:600;
+  font-size:clamp(0.65rem,0.95vw,0.88rem);
+  color:rgba(200,240,235,0.6);
+  letter-spacing:2.5px;margin-top:3px;
+  text-transform:uppercase;font-weight:600;
 }
 
-/* 활성 카드 번호 배지 — 카드 테두리 상단에 걸침, 가독성 폰트 */
+/* 활성 배지 — 카드 상단 */
 .neuron-node.active .node-info{
   position:absolute;
-  left:50%!important;top:-22px!important;
+  left:50%!important;top:-24px!important;
   transform:translateX(-50%)!important;
   white-space:nowrap;
   display:flex;flex-direction:row;align-items:center;gap:10px;
   pointer-events:none;z-index:300;
-  background:rgba(3,8,20,0.97);
-  border:1.5px solid currentColor;
+  background:rgba(2,10,14,0.96);
+  border:1px solid currentColor;
   border-radius:40px;
-  padding:6px 22px 6px 16px;
-  backdrop-filter:blur(14px);
+  padding:5px 20px 5px 14px;
+  backdrop-filter:blur(16px);
 }
-.neuron-node.active .node-num{
-  font-size:1.6rem;font-weight:900;line-height:1;letter-spacing:-0.01em;
-}
+.neuron-node.active .node-num{font-size:1.5rem;font-weight:900;line-height:1;}
 .neuron-node.active .node-key{
-  font-size:0.88rem;letter-spacing:3px;font-weight:700;
-  color:rgba(255,255,255,0.65);text-transform:uppercase;margin-top:0;
+  font-size:0.85rem;letter-spacing:3px;font-weight:700;
+  color:rgba(200,240,235,0.6);text-transform:uppercase;margin-top:0;
 }
-/* 배지 테두리/글씨 색상 — 그룹별: 아래 색상 테마 섹션에서 재정의 */
 
-/* visited */
-.neuron-node.visited:not(.active) .node-num{color:#fff;}
-.neuron-node.visited:not(.active) .node-key{color:rgba(255,255,255,0.88);}
+/* visited — 방문된 노드: 세포가 활성화된 느낌 */
+.neuron-node.visited:not(.active){
+  background:radial-gradient(circle at 38% 35%,rgba(62,255,216,0.18) 0%,#040e0c 100%);
+}
+.neuron-node.visited:not(.active) .node-num{color:#e0fff8;}
+.neuron-node.visited:not(.active) .node-key{color:rgba(200,240,235,0.8);}
 
 /* 활성 카드 */
 .neuron-node.active{
-  border-radius:26px;z-index:100;cursor:default;border-width:1.5px;overflow:visible;
+  border-radius:22px;z-index:100;cursor:default;
+  border-width:1px;overflow:visible;
 }
 .neuron-node.active::before{
-  content:'';position:absolute;inset:0;border-radius:26px;
-  background:rgba(3,8,20,0.995);z-index:0;backdrop-filter:blur(32px);
-  -webkit-backdrop-filter:blur(32px);
+  content:'';position:absolute;inset:0;border-radius:22px;
+  background:rgba(2,10,14,0.97);z-index:0;
+  backdrop-filter:blur(36px);-webkit-backdrop-filter:blur(36px);
 }
+.neuron-node.active::after{display:none;} /* 핵 발광점 숨김 */
 .neuron-node.active .node-content{overflow:hidden;position:relative;z-index:1;}
 
-/* ══ 색상 테마 — 8노드 재구성 ══ */
+/* ═══════════════════════════════════════
+   색상 테마 — 심해 발광 세포체
+═══════════════════════════════════════ */
 
-/* 과거 — n1 (빨강) */
-#n1{border-color:var(--crisis);}
-#n1.visited{background:var(--crisis)!important;box-shadow:0 0 22px var(--crisis);}
+/* ── 과거 n1 — 산호 적색 세포 ── */
+#n1{border-color:var(--crisis);box-shadow:0 0 8px rgba(255,124,124,0.2);}
+#n1::after{background:rgba(255,100,100,0.5);box-shadow:0 0 8px rgba(255,80,80,0.9);}
+#n1.visited:not(.active){
+  background:radial-gradient(circle at 38% 35%,rgba(255,100,100,0.18) 0%,#0e0505 100%);
+  box-shadow:0 0 14px rgba(255,100,100,0.28);}
 #n1 .node-num{color:var(--crisis);}
 #n1.active{border-color:var(--crisis)!important;}
 #n1.active .node-num{color:var(--crisis);}
-
-/* 과거→현재 더미 줄기 */
-#nd1,#nd2,#nd3,#nd4{border-color:var(--crisis);}
+#n1.active .node-info{border-color:var(--crisis);color:var(--crisis);}
+#nd1,#nd2,#nd3,#nd4{border-color:rgba(255,124,124,0.35);}
+#nd1::after,#nd2::after,#nd3::after,#nd4::after{background:rgba(255,100,100,0.2);box-shadow:none;}
 #nd1.visited,#nd2.visited,#nd3.visited,#nd4.visited{
-  background:var(--crisis)!important;box-shadow:0 0 10px var(--crisis);}
+  background:rgba(255,80,80,0.1)!important;border-color:rgba(255,124,124,0.55)!important;}
 
-/* 현재 — n2~n5 (청록) */
-#n2,#n3,#n4,#n5{border-color:var(--primary);width:28px;height:28px;}
-#n2.visited,#n3.visited,#n4.visited,#n5.visited{background:var(--primary)!important;box-shadow:0 0 22px var(--primary);}
+/* ── 현재 n2~n5 — 청록 세포 군집 ── */
+#n2,#n3,#n4,#n5{border-color:var(--primary);width:28px;height:28px;
+  box-shadow:0 0 8px rgba(62,255,216,0.2);}
+#n2::after,#n3::after,#n4::after,#n5::after{
+  background:rgba(62,255,216,0.55);box-shadow:0 0 8px rgba(62,255,216,0.9);}
+#n2.visited:not(.active),#n3.visited:not(.active),
+#n4.visited:not(.active),#n5.visited:not(.active){
+  background:radial-gradient(circle at 38% 35%,rgba(62,255,216,0.18) 0%,#030f0d 100%);
+  box-shadow:0 0 16px rgba(62,255,216,0.28);}
 #n2 .node-num,#n3 .node-num,#n4 .node-num,#n5 .node-num{color:var(--primary);}
 #n2.active,#n3.active,#n4.active,#n5.active{border-color:var(--primary)!important;}
 #n2.active .node-num,#n3.active .node-num,#n4.active .node-num,#n5.active .node-num{color:var(--primary);}
+#n2.active .node-info,#n3.active .node-info,
+#n4.active .node-info,#n5.active .node-info{border-color:var(--primary);color:var(--primary);}
 #n2.visited:not(.active) .node-num,#n3.visited:not(.active) .node-num,
-#n4.visited:not(.active) .node-num,#n5.visited:not(.active) .node-num{color:#fff;}
+#n4.visited:not(.active) .node-num,#n5.visited:not(.active) .node-num{color:#b8fff2;}
 
-/* 현재→미래 더미 줄기 */
-#nb1,#nb2{border-color:var(--future);}
-#nb1.visited,#nb2.visited{background:var(--future)!important;box-shadow:0 0 10px var(--future);}
+/* ── 더미 줄기 ── */
+#nb1,#nb2{border-color:rgba(179,136,255,0.35);}
+#nb1::after,#nb2::after{background:rgba(179,136,255,0.2);box-shadow:none;}
+#nb1.visited,#nb2.visited{
+  background:rgba(179,136,255,0.08)!important;border-color:rgba(179,136,255,0.5)!important;}
 
-/* 미래 — n6~n7 (보라) */
-#n6,#n7{border-color:var(--future);width:28px;height:28px;}
-#n6.visited,#n7.visited{background:var(--future)!important;box-shadow:0 0 22px var(--future);}
+/* ── 미래 n6~n7 — 연보라 세포 ── */
+#n6,#n7{border-color:var(--future);width:28px;height:28px;
+  box-shadow:0 0 8px rgba(179,136,255,0.18);}
+#n6::after,#n7::after{
+  background:rgba(179,136,255,0.5);box-shadow:0 0 8px rgba(160,100,255,0.9);}
+#n6.visited:not(.active),#n7.visited:not(.active){
+  background:radial-gradient(circle at 38% 35%,rgba(179,136,255,0.18) 0%,#0a0514 100%);
+  box-shadow:0 0 14px rgba(179,136,255,0.24);}
 #n6 .node-num,#n7 .node-num{color:var(--future);}
 #n6.active,#n7.active{border-color:var(--future)!important;}
 #n6.active .node-num,#n7.active .node-num{color:var(--future);}
+#n6.active .node-info,#n7.active .node-info{border-color:var(--future);color:var(--future);}
 
-/* 실현 — n8 (금색) */
-#n8{border-color:var(--special);width:30px;height:30px;}
-#n8.visited{background:var(--special)!important;box-shadow:0 0 26px var(--special);}
+/* ── 실현 n8 — 황금 세포 ── */
+#n8{border-color:var(--special);width:30px;height:30px;
+  box-shadow:0 0 10px rgba(255,224,102,0.22);}
+#n8::after{background:rgba(255,224,102,0.55);box-shadow:0 0 10px rgba(255,200,0,0.9);}
+#n8.visited:not(.active){
+  background:radial-gradient(circle at 38% 35%,rgba(255,224,102,0.2) 0%,#0f0a00 100%);
+  box-shadow:0 0 18px rgba(255,200,0,0.28);}
 #n8 .node-num{color:var(--special);}
 #n8.active{border-color:var(--special)!important;}
 #n8.active .node-num{color:var(--special);}
+#n8.active .node-info{border-color:var(--special);color:var(--special);}
 #n8 .node-info{left:38px;top:50%;transform:translateY(-50%);align-items:flex-start;}
 #n8 .node-num{font-size:clamp(1.1rem,1.6vw,1.5rem);}
-#n8 .node-key{font-size:clamp(0.58rem,0.82vw,0.76rem);}
+#n8 .node-key{font-size:clamp(0.55rem,0.8vw,0.74rem);}
 
-/* ── 활성 배지 색상 (그룹별) ── */
-#n1.active .node-info{border-color:var(--crisis);color:var(--crisis);}
-#n2.active .node-info,#n3.active .node-info,
-#n4.active .node-info,#n5.active .node-info{border-color:var(--primary);color:var(--primary);}
-#n6.active .node-info,#n7.active .node-info{border-color:var(--future);color:var(--future);}
-#n8.active .node-info{border-color:var(--special);color:var(--special);}
-
-/* ── 카드 h1 색상 (그룹별) ── */
+/* ── 카드 h1 그라디언트 ── */
 #n1 .node-content h1{
-  background:linear-gradient(135deg,#fff 0%,#ffbbbb 100%);
-  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
-}
+  background:linear-gradient(135deg,#ffe8e8 0%,#ff9a9a 100%);
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
 #n6 .node-content h1,#n7 .node-content h1{
-  background:linear-gradient(135deg,#fff 0%,#d8b4fe 100%);
-  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
-}
+  background:linear-gradient(135deg,#f0e8ff 0%,#c4a0ff 100%);
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
 #n8 .node-content h1{
-  background:linear-gradient(135deg,#fff 0%,#fde68a 100%);
-  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
-}
+  background:linear-gradient(135deg,#fffbe0 0%,#ffe066 100%);
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
 
-/* ── 태그 색상 (그룹별) ── */
-#n1 .tag{border-color:rgba(255,107,107,0.45);color:#ffbbbb;background:rgba(255,107,107,0.08);}
-#n6 .tag,#n7 .tag{border-color:rgba(192,132,252,0.45);color:#d8b4fe;background:rgba(192,132,252,0.08);}
-#n8 .tag{border-color:rgba(241,196,15,0.4);color:#fde68a;background:rgba(241,196,15,0.07);}
+/* ── 태그 ── */
+#n1 .tag{border-color:rgba(255,124,124,0.38);color:#ffaaaa;background:rgba(255,80,80,0.06);}
+#n6 .tag,#n7 .tag{border-color:rgba(179,136,255,0.38);color:#d4b4ff;background:rgba(160,100,255,0.06);}
+#n8 .tag{border-color:rgba(255,224,102,0.38);color:#ffe999;background:rgba(255,200,0,0.05);}
 
-/* ── divider 색상 ── */
+/* ── divider ── */
 #n1 .divider{background:linear-gradient(to right,transparent,var(--crisis),transparent);}
-#n6 .divider,#n7 .divider{background:linear-gradient(to right,transparent,#c084fc,transparent);}
+#n6 .divider,#n7 .divider{background:linear-gradient(to right,transparent,var(--future),transparent);}
 #n8 .divider{background:linear-gradient(to right,transparent,var(--special),transparent);}
 
 /* ── 단락 색상 ── */
-#n1 .node-content p{color:rgba(248,232,232,1);}
-#n6 .node-content p,#n7 .node-content p{color:rgba(235,224,248,1);}
+#n1 .node-content p{color:rgba(255,220,220,0.9);}
+#n6 .node-content p,#n7 .node-content p{color:rgba(230,218,255,0.9);}
 
 /* ── glow hint ── */
-#n1.next-hint{animation:glow-crisis 1.4s ease-in-out infinite;}
-#n2.next-hint,#n3.next-hint,#n4.next-hint,#n5.next-hint{animation:glow-primary 1.4s ease-in-out infinite;}
-#n6.next-hint,#n7.next-hint{animation:glow-future 1.4s ease-in-out infinite;}
-#n8.next-hint{animation:glow-special 1.4s ease-in-out infinite;}
+@keyframes glow-crisis{0%,100%{box-shadow:0 0 8px rgba(255,124,124,0.2);}
+  50%{box-shadow:0 0 22px 8px rgba(255,80,80,0.5),0 0 40px 18px rgba(255,80,80,0.12);}}
+@keyframes glow-primary{0%,100%{box-shadow:0 0 8px rgba(62,255,216,0.2);}
+  50%{box-shadow:0 0 22px 8px rgba(62,255,216,0.55),0 0 40px 18px rgba(62,255,216,0.12);}}
+@keyframes glow-future{0%,100%{box-shadow:0 0 8px rgba(179,136,255,0.2);}
+  50%{box-shadow:0 0 22px 8px rgba(160,100,255,0.55),0 0 40px 18px rgba(160,100,255,0.12);}}
+@keyframes glow-special{0%,100%{box-shadow:0 0 8px rgba(255,224,102,0.2);}
+  50%{box-shadow:0 0 22px 8px rgba(255,200,0,0.55),0 0 40px 18px rgba(255,200,0,0.12);}}
+#n1.next-hint{animation:glow-crisis 1.6s ease-in-out infinite;}
+#n2.next-hint,#n3.next-hint,#n4.next-hint,#n5.next-hint{animation:glow-primary 1.6s ease-in-out infinite;}
+#n6.next-hint,#n7.next-hint{animation:glow-future 1.6s ease-in-out infinite;}
+#n8.next-hint{animation:glow-special 1.6s ease-in-out infinite;}
 
 /* ── 사이클 다이어그램 ── */
 .cycle-diagram{
   display:flex;align-items:center;justify-content:center;flex-wrap:wrap;
   gap:4px;margin:clamp(10px,1.6vh,18px) 0;
-  position:relative;
 }
 .cycle-item{
   display:flex;flex-direction:column;align-items:center;gap:4px;
-  padding:10px 14px;border-radius:12px;
-  border:1px solid rgba(0,242,254,0.25);
-  background:rgba(0,242,254,0.06);
-  font-size:clamp(0.68rem,1vw,0.82rem);color:rgba(0,242,254,0.9);
+  padding:10px 14px;border-radius:14px;
+  border:1px solid rgba(62,255,216,0.22);
+  background:rgba(62,255,216,0.05);
+  font-size:clamp(0.68rem,1vw,0.82rem);color:rgba(62,255,216,0.85);
   font-weight:600;letter-spacing:0.5px;min-width:72px;
-  transition:0.3s;
+  transition:0.35s;
 }
 .cycle-item .c-icon{font-size:1.2rem;}
-.cycle-arrow{
-  font-size:1.1rem;color:rgba(0,242,254,0.45);font-weight:700;
-  padding:0 2px;
-}
-.cycle-back{
-  /* ↩ 되돌아가는 화살표 — 아래 줄로 */
-  width:100%;text-align:center;font-size:0.9rem;
-  color:rgba(0,242,254,0.3);margin-top:-2px;
-}
+.cycle-arrow{font-size:1rem;color:rgba(62,255,216,0.35);font-weight:700;padding:0 2px;}
+.cycle-back{width:100%;text-align:center;font-size:0.85rem;color:rgba(62,255,216,0.25);margin-top:-2px;}
 @keyframes cycle-pulse{
-  0%,100%{border-color:rgba(0,242,254,0.25);background:rgba(0,242,254,0.06);}
-  50%{border-color:rgba(0,242,254,0.55);background:rgba(0,242,254,0.14);}
+  0%,100%{border-color:rgba(62,255,216,0.2);background:rgba(62,255,216,0.04);}
+  50%{border-color:rgba(62,255,216,0.55);background:rgba(62,255,216,0.12);
+      box-shadow:0 0 10px rgba(62,255,216,0.2);}
 }
-#n5.active .cycle-item{animation:cycle-pulse 2.2s ease-in-out infinite;}
+#n5.active .cycle-item{animation:cycle-pulse 2.4s ease-in-out infinite;}
 #n5.active .cycle-item.c1{animation-delay:0s;}
-#n5.active .cycle-item.c2{animation-delay:0.55s;}
-#n5.active .cycle-item.c3{animation-delay:1.1s;}
-#n5.active .cycle-item.c4{animation-delay:1.65s;}
+#n5.active .cycle-item.c2{animation-delay:0.6s;}
+#n5.active .cycle-item.c3{animation-delay:1.2s;}
+#n5.active .cycle-item.c4{animation-delay:1.8s;}
 
 /* 카드 내부 */
 .node-content{
@@ -260,7 +328,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#00030a;color:#fff;
 /* ★ 카드 h1 — 핵심 한 줄 크게 */
 .node-content h1{
   font-size:clamp(1.9rem,3.8vw,3.2rem);font-weight:900;line-height:1.18;
-  background:linear-gradient(135deg,#fff 0%,#a0eeff 100%);
+  background:linear-gradient(135deg,#e0fff8 0%,#3effd8 100%);
   -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
   filter:drop-shadow(0 2px 10px rgba(0,0,0,0.8));
 }
@@ -286,34 +354,34 @@ html,body{width:100%;height:100%;overflow:hidden;background:#00030a;color:#fff;
 
 .node-content p{
   font-size:clamp(1rem,1.8vw,1.3rem);line-height:1.88;
-  color:rgba(222,238,248,1);
+  color:rgba(185,235,225,0.95);
   margin-top:clamp(6px,1.2vh,12px);max-width:540px;
   text-shadow:0 1px 6px rgba(0,0,0,0.95);
 }
-/* p 색상 — 아래 색상 테마 섹션에서 재정의 */
-
 .node-content .sub-p{
-  font-size:clamp(0.88rem,1.5vw,1.12rem);color:rgba(180,210,230,0.85);
+  font-size:clamp(0.88rem,1.5vw,1.12rem);color:rgba(145,205,195,0.82);
   line-height:1.7;margin-top:8px;max-width:480px;text-shadow:0 1px 4px rgba(0,0,0,0.9);
 }
 
-strong.crisis{color:#ff8888;font-weight:900;text-shadow:0 0 16px rgba(255,80,80,0.65),0 1px 4px rgba(0,0,0,0.9);}
-strong.primary{color:#00f2fe;font-weight:900;text-shadow:0 0 14px rgba(0,242,254,0.6),0 1px 4px rgba(0,0,0,0.9);}
-strong.special{color:#f1c40f;font-weight:900;text-shadow:0 0 14px rgba(241,196,15,0.6),0 1px 4px rgba(0,0,0,0.9);}
-strong.future{color:#d0a0ff;font-weight:900;text-shadow:0 0 14px rgba(192,132,252,0.6),0 1px 4px rgba(0,0,0,0.9);}
-strong.white{color:#fff;font-weight:900;font-size:clamp(1.3rem,2.2vw,1.8rem);letter-spacing:2px;text-shadow:0 0 24px rgba(255,255,255,0.5),0 1px 5px rgba(0,0,0,0.9);}
+/* strong 발광 */
+strong.crisis{color:#ff9090;font-weight:900;text-shadow:0 0 14px rgba(255,80,80,0.5);}
+strong.primary{color:#3effd8;font-weight:900;text-shadow:0 0 12px rgba(62,255,216,0.55);}
+strong.special{color:#ffe066;font-weight:900;text-shadow:0 0 12px rgba(255,200,0,0.5);}
+strong.future{color:#c4a0ff;font-weight:900;text-shadow:0 0 12px rgba(160,100,255,0.5);}
+strong.white{color:#d8fff8;font-weight:900;font-size:clamp(1.3rem,2.2vw,1.8rem);
+  letter-spacing:2px;text-shadow:0 0 20px rgba(62,255,216,0.45);}
 
+/* 태그 기본 (현재 그룹) */
 .tag-row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:clamp(8px,1.4vh,14px);flex-shrink:0;}
 .tag{
   padding:5px 13px;border-radius:20px;font-size:clamp(0.72rem,1.1vw,0.9rem);
-  border:1px solid rgba(0,242,254,0.4);color:#88eeff;letter-spacing:0.8px;
-  background:rgba(0,242,254,0.07);font-weight:500;
+  border:1px solid rgba(62,255,216,0.3);color:rgba(62,255,216,0.85);letter-spacing:0.8px;
+  background:rgba(62,255,216,0.06);font-weight:500;
 }
-/* tag 색상 — 아래 색상 테마 섹션에서 재정의 */
 
 /* 힌트 발광 */
 @keyframes glow-crisis{0%,100%{box-shadow:none;}50%{box-shadow:0 0 18px 10px rgba(255,107,107,0.6),0 0 34px 20px rgba(255,107,107,0.18);}}
-@keyframes glow-primary{0%,100%{box-shadow:none;}50%{box-shadow:0 0 18px 10px rgba(0,242,254,0.6),0 0 34px 20px rgba(0,242,254,0.18);}}
+@keyframes glow-primary-legacy{0%,100%{box-shadow:none;}50%{box-shadow:0 0 18px 10px rgba(62,255,216,0.6),0 0 34px 20px rgba(62,255,216,0.18);}}
 @keyframes glow-future{0%,100%{box-shadow:none;}50%{box-shadow:0 0 18px 10px rgba(192,132,252,0.65),0 0 34px 20px rgba(192,132,252,0.2);}}
 @keyframes glow-special{0%,100%{box-shadow:none;}50%{box-shadow:0 0 18px 10px rgba(241,196,15,0.65),0 0 34px 20px rgba(241,196,15,0.2);}}
 /* next-hint glow — 아래 색상 테마 섹션에서 재정의 */
@@ -331,16 +399,16 @@ strong.white{color:#fff;font-weight:900;font-size:clamp(1.3rem,2.2vw,1.8rem);let
   animation:rb-scale 1.4s cubic-bezier(0.2,0.8,0.2,1) forwards;
 }
 #reversal-banner .rb-text.past{
-  color:#00f2fe;
-  filter:drop-shadow(0 0 30px rgba(0,242,254,0.8));
+  color:#3effd8;
+  filter:drop-shadow(0 0 30px rgba(62,255,216,0.8));
 }
 #reversal-banner .rb-text.present{
-  color:#00f2fe;
-  filter:drop-shadow(0 0 30px rgba(0,242,254,0.8));
+  color:#3effd8;
+  filter:drop-shadow(0 0 30px rgba(62,255,216,0.8));
 }
 #reversal-banner .rb-text.future{
-  color:#c084fc;
-  filter:drop-shadow(0 0 30px rgba(192,132,252,0.8));
+  color:#b388ff;
+  filter:drop-shadow(0 0 30px rgba(179,136,255,0.8));
 }
 @keyframes rb-scale{0%{transform:scale(0.5);opacity:0;}40%{transform:scale(1.05);opacity:1;}100%{transform:scale(1);opacity:1;}}
 
@@ -348,12 +416,12 @@ strong.white{color:#fff;font-weight:900;font-size:clamp(1.3rem,2.2vw,1.8rem);let
 #drb-complete-overlay{
   position:fixed;inset:0;z-index:500;pointer-events:none;
   display:flex;flex-direction:column;align-items:center;justify-content:center;
-  opacity:0;visibility:hidden;background:rgba(0,4,14,0.0);
+  opacity:0;visibility:hidden;background:rgba(2,12,15,0.0);
   transition:opacity 0.7s ease,visibility 0s linear 0.7s,background 0.7s ease,backdrop-filter 0.7s ease;
 }
 #drb-complete-overlay.show{
   opacity:1;visibility:visible;pointer-events:auto;
-  background:rgba(0,4,14,0.6);backdrop-filter:blur(3px);
+  background:rgba(2,12,15,0.65);backdrop-filter:blur(4px);
   transition:opacity 0.7s ease,visibility 0s linear 0s,background 0.7s ease,backdrop-filter 0.7s ease;
 }
 #drb-letters{
@@ -365,9 +433,9 @@ strong.white{color:#fff;font-weight:900;font-size:clamp(1.3rem,2.2vw,1.8rem);let
 .drb-letter{
   font-size:clamp(6rem,14vw,11rem);font-weight:900;line-height:1;
 }
-.drb-letter.D{color:var(--crisis);filter:drop-shadow(0 0 30px var(--crisis));}
-.drb-letter.R{color:var(--primary);filter:drop-shadow(0 0 30px var(--primary));}
-.drb-letter.B{color:var(--future);filter:drop-shadow(0 0 30px var(--future));}
+.drb-letter.D{color:var(--crisis);filter:drop-shadow(0 0 30px rgba(255,100,100,0.7));}
+.drb-letter.R{color:var(--primary);filter:drop-shadow(0 0 30px rgba(62,255,216,0.7));}
+.drb-letter.B{color:var(--future);filter:drop-shadow(0 0 30px rgba(179,136,255,0.7));}
 @keyframes drb-pulse{
   0%,100%{filter:drop-shadow(0 0 20px currentColor) drop-shadow(0 0 40px currentColor);}
   50%{filter:drop-shadow(0 0 50px currentColor) drop-shadow(0 0 100px currentColor);}
@@ -414,7 +482,7 @@ strong.white{color:#fff;font-weight:900;font-size:clamp(1.3rem,2.2vw,1.8rem);let
   position:fixed;inset:0;display:flex;flex-direction:column;
   justify-content:center;align-items:center;gap:clamp(14px,2.2vh,24px);
   z-index:3000;
-  background:radial-gradient(circle at 50% 50%,#001a3a 0%,#00030a 100%);
+  background:radial-gradient(circle at 50% 50%,#021820 0%,#020c0f 100%);
   opacity:0;visibility:hidden;
   transition:opacity 1.8s ease,visibility 0s linear 1.8s;
 }
@@ -437,7 +505,7 @@ strong.white{color:#fff;font-weight:900;font-size:clamp(1.3rem,2.2vw,1.8rem);let
 #final-phrase.show .closing-eyebrow{opacity:1;transform:translateY(0);}
 #final-phrase h2{
   font-size:clamp(2.2rem,5.2vw,4.8rem);font-weight:900;text-align:center;line-height:1.18;
-  background:linear-gradient(135deg,#fff 0%,#00f2fe 45%,var(--special) 100%);
+  background:linear-gradient(135deg,#d8fff8 0%,#3effd8 45%,var(--special) 100%);
   -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
   transform:scale(0.75);opacity:0;
   transition:transform 2.4s cubic-bezier(0.2,0.8,0.2,1),opacity 1.6s ease;
@@ -471,17 +539,17 @@ strong.white{color:#fff;font-weight:900;font-size:clamp(1.3rem,2.2vw,1.8rem);let
 }
 #video-frame{
   width:100%;border-radius:14px;
-  border:1.5px solid rgba(0,242,254,0.3);
+  border:1.5px solid rgba(62,255,216,0.3);
   background:#000;
   position:relative;overflow:hidden;
-  box-shadow:0 0 32px rgba(0,242,254,0.12), 0 8px 32px rgba(0,0,0,0.8);
+  box-shadow:0 0 32px rgba(62,255,216,0.12), 0 8px 32px rgba(0,0,0,0.8);
 }
 /* 상단 바 — 터미널/시스템 느낌 */
 #video-frame-bar{
   display:flex;align-items:center;gap:8px;
   padding:8px 14px;
-  background:rgba(0,242,254,0.06);
-  border-bottom:1px solid rgba(0,242,254,0.15);
+  background:rgba(62,255,216,0.06);
+  border-bottom:1px solid rgba(62,255,216,0.15);
 }
 .vf-dot{width:10px;height:10px;border-radius:50%;}
 .vf-dot.red{background:#ff6b6b;}
@@ -489,7 +557,7 @@ strong.white{color:#fff;font-weight:900;font-size:clamp(1.3rem,2.2vw,1.8rem);let
 .vf-dot.green{background:#2ecc71;}
 #video-frame-title{
   margin-left:6px;font-size:0.72rem;letter-spacing:2px;
-  color:rgba(0,242,254,0.55);text-transform:uppercase;font-family:monospace;
+  color:rgba(62,255,216,0.55);text-transform:uppercase;font-family:monospace;
 }
 #video-frame-badge{
   margin-left:auto;font-size:0.65rem;letter-spacing:1.5px;
@@ -516,7 +584,7 @@ strong.white{color:#fff;font-weight:900;font-size:clamp(1.3rem,2.2vw,1.8rem);let
 /* 영상 없을 때 플레이스홀더 */
 #video-placeholder{
   display:flex;flex-direction:column;align-items:center;gap:12px;
-  color:rgba(0,242,254,0.3);
+  color:rgba(62,255,216,0.3);
 }
 #video-placeholder .ph-icon{font-size:2.5rem;opacity:0.5;}
 #video-placeholder .ph-text{
@@ -534,34 +602,34 @@ strong.white{color:#fff;font-weight:900;font-size:clamp(1.3rem,2.2vw,1.8rem);let
 }
 .preset-btn{
   padding:7px 14px;border-radius:20px;cursor:pointer;font-size:clamp(0.72rem,1.1vw,0.88rem);
-  border:1px solid rgba(0,242,254,0.35);color:#88eeff;background:rgba(0,242,254,0.07);
+  border:1px solid rgba(62,255,216,0.35);color:rgba(62,255,216,0.88);background:rgba(62,255,216,0.07);
   transition:0.25s;font-family:inherit;letter-spacing:0.5px;
 }
-.preset-btn:hover{background:rgba(0,242,254,0.18);border-color:rgba(0,242,254,0.7);color:#fff;box-shadow:0 0 12px rgba(0,242,254,0.3);}
+.preset-btn:hover{background:rgba(62,255,216,0.18);border-color:rgba(62,255,216,0.7);color:#fff;box-shadow:0 0 12px rgba(62,255,216,0.3);}
 
 #ai-input-area{display:flex;gap:10px;align-items:center;margin-bottom:10px;}
 #ai-question{
-  flex:1;background:rgba(0,242,254,0.05);
-  border:1px solid rgba(0,242,254,0.28);border-radius:12px;
+  flex:1;background:rgba(62,255,216,0.05);
+  border:1px solid rgba(62,255,216,0.28);border-radius:12px;
   color:#fff;font-size:clamp(0.88rem,1.4vw,1.02rem);padding:12px 16px;
   outline:none;font-family:inherit;transition:border-color 0.3s,box-shadow 0.3s;
 }
-#ai-question:focus{border-color:var(--primary);box-shadow:0 0 18px rgba(0,242,254,0.2);}
-#ai-question::placeholder{color:rgba(0,242,254,0.32);}
+#ai-question:focus{border-color:var(--primary);box-shadow:0 0 18px rgba(62,255,216,0.2);}
+#ai-question::placeholder{color:rgba(62,255,216,0.28);}
 #ai-send{
-  padding:12px 20px;background:rgba(0,242,254,0.1);
+  padding:12px 20px;background:rgba(62,255,216,0.1);
   border:1px solid var(--primary);border-radius:12px;
   color:var(--primary);cursor:pointer;font-weight:700;font-size:0.92rem;
   transition:0.3s;white-space:nowrap;font-family:inherit;
 }
-#ai-send:hover{background:var(--primary);color:#000;box-shadow:0 0 18px rgba(0,242,254,0.4);}
+#ai-send:hover{background:var(--primary);color:#000;box-shadow:0 0 18px rgba(62,255,216,0.4);}
 #ai-send:disabled{opacity:0.4;cursor:not-allowed;}
-#ai-thinking{text-align:center;padding:18px;color:rgba(0,242,254,0.55);font-size:0.88rem;letter-spacing:3px;display:none;}
+#ai-thinking{text-align:center;padding:18px;color:rgba(62,255,216,0.55);font-size:0.88rem;letter-spacing:3px;display:none;}
 #ai-thinking.visible{display:block;}
 @keyframes blink{0%,100%{opacity:0.3;}50%{opacity:1;}}
 .cursor-blink{animation:blink 0.9s ease-in-out infinite;}
 #ai-answer{
-  background:rgba(0,242,254,0.04);border:1px solid rgba(0,242,254,0.14);
+  background:rgba(62,255,216,0.04);border:1px solid rgba(62,255,216,0.14);
   border-radius:12px;padding:16px 18px;min-height:72px;
   font-size:clamp(0.82rem,1.3vw,0.96rem);line-height:1.9;color:rgba(200,230,245,1);
   white-space:pre;word-break:break-word;display:none;
@@ -609,15 +677,15 @@ strong.white{color:#fff;font-weight:900;font-size:clamp(1.3rem,2.2vw,1.8rem);let
 #video-overlay.show #vov-inner{transform:scale(1);opacity:1;}
 #vov-bar{
   display:flex;align-items:center;gap:8px;padding:9px 16px;
-  background:rgba(0,242,254,0.06);
-  border:1px solid rgba(0,242,254,0.15);border-bottom:none;
+  background:rgba(62,255,216,0.06);
+  border:1px solid rgba(62,255,216,0.12);border-bottom:none;
   border-radius:14px 14px 0 0;
 }
 .vov-dot{width:11px;height:11px;border-radius:50%;}
 .vov-dot.r{background:#ff6b6b;}.vov-dot.y{background:#f1c40f;}.vov-dot.g{background:#2ecc71;}
 #vov-title{
   margin-left:6px;font-size:0.72rem;letter-spacing:2px;
-  color:rgba(0,242,254,0.55);font-family:monospace;flex:1;
+  color:rgba(62,255,216,0.55);font-family:monospace;flex:1;
 }
 #vov-close{
   padding:5px 16px;border-radius:20px;
@@ -628,14 +696,14 @@ strong.white{color:#fff;font-weight:900;font-size:clamp(1.3rem,2.2vw,1.8rem);let
 #vov-close:hover{border-color:rgba(255,107,107,0.6);color:rgba(255,107,107,0.9);}
 #vov-player{
   width:100%;aspect-ratio:16/9;background:#000;
-  border:1px solid rgba(0,242,254,0.15);border-top:none;
+  border:1px solid rgba(62,255,216,0.12);border-top:none;
   border-radius:0 0 14px 14px;overflow:hidden;
   display:flex;align-items:center;justify-content:center;
 }
 #vov-video{width:100%;height:100%;object-fit:contain;display:none;}
 #vov-ph{
   display:flex;flex-direction:column;align-items:center;gap:12px;
-  color:rgba(0,242,254,0.3);text-align:center;
+  color:rgba(62,255,216,0.3);text-align:center;
 }
 #vov-ph .pi{font-size:2.8rem;opacity:.5;}
 #vov-ph .pt{font-size:.72rem;letter-spacing:2px;font-family:monospace;line-height:1.8;}
@@ -689,13 +757,13 @@ strong.white{color:#fff;font-weight:900;font-size:clamp(1.3rem,2.2vw,1.8rem);let
 #outro-thanks.show{opacity:1;}
 #outro-thanks .thanks-word{
   font-size:clamp(3rem,8vw,7rem);font-weight:900;letter-spacing:0.3em;
-  background:linear-gradient(135deg,#fff 0%,#00f2fe 50%,var(--special) 100%);
+  background:linear-gradient(135deg,#d8fff8 0%,#3effd8 50%,var(--special) 100%);
   -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
-  filter:drop-shadow(0 0 30px rgba(0,242,254,0.4));
+  filter:drop-shadow(0 0 30px rgba(62,255,216,0.4));
 }
 #outro-thanks .thanks-sub{
   margin-top:16px;font-size:clamp(0.8rem,1.4vw,1.1rem);
-  letter-spacing:0.5em;color:rgba(0,242,254,0.45);
+  letter-spacing:0.5em;color:rgba(62,255,216,0.45);
   text-transform:uppercase;font-weight:500;
 }
 
@@ -707,8 +775,8 @@ strong.white{color:#fff;font-weight:900;font-size:clamp(1.3rem,2.2vw,1.8rem);let
   border-radius:30px;cursor:pointer;font-size:0.75rem;
   backdrop-filter:blur(10px);transition:0.3s;letter-spacing:1px;
 }
-#sound-toggle:hover{border-color:var(--primary);color:var(--primary);}
-#sound-toggle.on{border-color:rgba(0,242,254,0.4);color:rgba(0,242,254,0.6);}
+#sound-toggle:hover{border-color:rgba(62,255,216,0.5);color:var(--primary);}
+#sound-toggle.on{border-color:rgba(62,255,216,0.4);color:rgba(62,255,216,0.65);}
 </style>
 </head>
 <body>
@@ -754,7 +822,7 @@ strong.white{color:#fff;font-weight:900;font-size:clamp(1.3rem,2.2vw,1.8rem);let
   <div class="closing-sub">
     LOGIBOT은 단순한 챗봇이 아닙니다.<br>
     DRB의 모든 구성원이 전문가가 되는 순간,<br>
-    그것이 진짜 <strong style="color:var(--primary);text-shadow:0 0 14px rgba(0,242,254,0.5)">AX</strong>의 시작입니다.
+    그것이 진짜 <strong style="color:var(--primary);text-shadow:0 0 14px rgba(62,255,216,0.5)">AX</strong>의 시작입니다.
   </div>
 
   <div id="ai-demo-box">
@@ -851,7 +919,7 @@ strong.white{color:#fff;font-weight:900;font-size:clamp(1.3rem,2.2vw,1.8rem);let
     <div class="node-content">
       <h1>반복되는 질문,<br>사라지는 지식</h1>
       <div class="divider"></div>
-      <p>노하우는 엑셀·메신저·담당자 머릿속에만 존재했습니다.<br><strong class="crisis">그 시간이 매일 정해진 답에 소비되고,<br>그 사람이 떠나면 지식도 사라집니다.</strong></p>
+      <p>물류 노하우는 엑셀·메신저·담당자 머릿속에만 존재했습니다.<br><strong class="crisis">그 시간이 매일 정해진 답에 소비되고,<br>그 사람이 떠나면 지식도 사라집니다.</strong></p>
       <p class="sub-p">이것은 개인의 문제가 아닌<br><strong class="crisis">조직 구조의 문제였습니다.</strong></p>
     </div>
   </div>
@@ -1059,7 +1127,7 @@ const DUMMY_IDS=['nd1','nd2','nd3','nd4','nb1','nb2'];
 const DUMMY_LETTER={nd1:'D',nd2:'D',nd3:'D',nd4:'D',nb1:'B',nb2:'B'};
 const LETTER_COLORS={
   D:{stroke:'rgba(255,107,107,0.9)',shadow:'rgba(255,107,107,0.7)'},
-  R:{stroke:'rgba(0,242,254,0.9)',  shadow:'rgba(0,242,254,0.7)'},
+  R:{stroke:'rgba(62,255,216,0.9)',  shadow:'rgba(62,255,216,0.7)'},
   B:{stroke:'rgba(192,132,252,0.9)',shadow:'rgba(192,132,252,0.7)'},
   S:{stroke:'rgba(241,196,15,0.9)', shadow:'rgba(241,196,15,0.7)'},
 };
@@ -1127,7 +1195,7 @@ function openCard(el){
     el.style.width=cw+'px';el.style.height=ch+'px';
     el.style.left=(W/2-cw/2)+'px';el.style.top=(H/2-ch/2)+'px';
     el.style.borderRadius='26px';
-    el.style.boxShadow='0 0 100px rgba(0,0,0,0.95),0 0 50px rgba(0,242,254,0.06)';
+    el.style.boxShadow='0 0 80px rgba(0,0,0,0.98),0 0 40px rgba(62,255,216,0.04),inset 0 0 60px rgba(2,14,12,0.5)';
   }));
 }
 
@@ -1158,10 +1226,10 @@ function setTone(type){
   ov.className=type;
   document.body.style.transition='background 1.8s ease';
   const bg={
-    crisis:'radial-gradient(circle at 50% 62%,#3d0404 0%,#0d0003 70%)',
-    resolve:'radial-gradient(circle at 50% 28%,#002040 0%,#00030a 70%)',
-    future:'radial-gradient(circle at 50% 46%,#1c0038 0%,#00030a 70%)',
-    default:'radial-gradient(circle at 50% 45%,#001a35 0%,#00030a 70%)',
+    crisis:'radial-gradient(circle at 20% 50%,#1a0606 0%,#020c0f 70%)',
+    resolve:'radial-gradient(circle at 50% 50%,#021a14 0%,#020c0f 70%)',
+    future:'radial-gradient(circle at 80% 50%,#0e0520 0%,#020c0f 70%)',
+    default:'radial-gradient(circle at 50% 50%,#020e14 0%,#020c0f 70%)',
   };
   document.body.style.background=bg[type]||bg.default;
 }
@@ -1264,10 +1332,10 @@ function showDRBComplete(){
   flash.style.animation='do-flash 1.4s ease-out forwards';
 
   document.body.style.transition='background 0.5s ease';
-  document.body.style.background='radial-gradient(circle at 50% 50%,#0a1a00 0%,#00030a 70%)';
+  document.body.style.background='radial-gradient(circle at 50% 50%,#041a14 0%,#020c0f 70%)';
   setTimeout(()=>{
     document.body.style.transition='background 2.5s ease';
-    document.body.style.background='radial-gradient(circle at 50% 50%,#001020 0%,#00030a 70%)';
+    document.body.style.background='radial-gradient(circle at 50% 50%,#020e12 0%,#020c0f 70%)';
   },500);
 
   document.getElementById('drb-complete-overlay').classList.add('show');
@@ -1306,7 +1374,7 @@ function specialClosingTrigger(){
 
   function doClose(){
     document.body.style.transition='background 1.6s ease';
-    document.body.style.background='radial-gradient(circle at 50% 50%,#001530 0%,#00030a 100%)';
+    document.body.style.background='radial-gradient(circle at 50% 50%,#031820 0%,#020c0f 100%)';
     document.getElementById('tone-overlay').className='resolve';
     playClosingTransition();
 
@@ -1451,25 +1519,63 @@ function getCenter(id){
   return{x:l+(el.offsetWidth||24)/2, y:t+(el.offsetHeight||24)/2};
 }
 
-function drawLine(x1,y1,x2,y2,color,shadow,lw,blur){
-  ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);
+/* ── 베지어 제어점 계산 — 유기적 곡선 수상돌기 ── */
+function bezierCP(x1,y1,x2,y2,curvature=0.38){
+  const dx=x2-x1, dy=y2-y1;
+  const mx=(x1+x2)/2, my=(y1+y2)/2;
+  const nx=-dy, ny=dx; // 법선 방향
+  const len=Math.sqrt(nx*nx+ny*ny)||1;
+  const offset=Math.sqrt(dx*dx+dy*dy)*curvature;
+  return {
+    cp1x: x1+dx*0.25 + (nx/len)*offset*0.5,
+    cp1y: y1+dy*0.25 + (ny/len)*offset*0.5,
+    cp2x: x1+dx*0.75 + (nx/len)*offset*0.5,
+    cp2y: y1+dy*0.75 + (ny/len)*offset*0.5,
+  };
+}
+
+/* 베지어 곡선 그리기 */
+function drawCurve(x1,y1,x2,y2,color,shadow,lw,blur,curvature=0.28){
+  const {cp1x,cp1y,cp2x,cp2y}=bezierCP(x1,y1,x2,y2,curvature);
+  ctx.beginPath();
+  ctx.moveTo(x1,y1);
+  ctx.bezierCurveTo(cp1x,cp1y,cp2x,cp2y,x2,y2);
   ctx.strokeStyle=color;ctx.lineWidth=lw;
   ctx.shadowColor=shadow;ctx.shadowBlur=blur;
   ctx.stroke();ctx.shadowBlur=0;
 }
 
-function drawPartialLine(x1,y1,x2,y2,t,color,shadow,lw,blur){
-  const ex=x1+(x2-x1)*t,ey=y1+(y2-y1)*t;
-  drawLine(x1,y1,ex,ey,color,shadow,lw,blur);
-  ctx.beginPath();ctx.arc(ex,ey,lw*2,0,Math.PI*2);
-  ctx.fillStyle=color.replace('0.9','1');
-  ctx.shadowColor=shadow;ctx.shadowBlur=blur*1.8;
-  ctx.fill();ctx.shadowBlur=0;
+/* t(0~1)까지만 그리는 유기 성장 애니메이션 */
+function drawPartialCurve(x1,y1,x2,y2,t,color,shadow,lw,blur){
+  const {cp1x,cp1y,cp2x,cp2y}=bezierCP(x1,y1,x2,y2,0.28);
+  // 베지어 t 분할 (de Casteljau)
+  const steps=Math.max(8,Math.round(t*40));
+  ctx.beginPath();
+  ctx.moveTo(x1,y1);
+  for(let i=1;i<=steps;i++){
+    const s=t*(i/steps);
+    const mt=1-s;
+    const bx=mt*mt*mt*x1+3*mt*mt*s*cp1x+3*mt*s*s*cp2x+s*s*s*x2;
+    const by=mt*mt*mt*y1+3*mt*mt*s*cp1y+3*mt*s*s*cp2y+s*s*s*y2;
+    ctx.lineTo(bx,by);
+  }
+  // 끝점 세포핵 느낌
+  const mt=1-t;
+  const ex=mt*mt*mt*x1+3*mt*mt*t*cp1x+3*mt*t*t*cp2x+t*t*t*x2;
+  const ey=mt*mt*mt*y1+3*mt*mt*t*cp1y+3*mt*t*t*cp2y+t*t*t*y2;
+  ctx.strokeStyle=color;ctx.lineWidth=lw;
+  ctx.shadowColor=shadow;ctx.shadowBlur=blur;
+  ctx.stroke();
+  ctx.beginPath();ctx.arc(ex,ey,lw*2.2,0,Math.PI*2);
+  ctx.fillStyle=color;ctx.shadowBlur=blur*2;ctx.fill();
+  ctx.shadowBlur=0;
 }
 
+/* 방사형 글로우 — 세포체 활성화 느낌 */
 function drawNodeGlow(cx,cy,color,r){
   const g=ctx.createRadialGradient(cx,cy,0,cx,cy,r);
-  g.addColorStop(0,color.replace('0.9','0.28'));
+  g.addColorStop(0,color.replace('0.9','0.22'));
+  g.addColorStop(0.5,color.replace('0.9','0.08'));
   g.addColorStop(1,color.replace('0.9','0'));
   ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);
   ctx.fillStyle=g;ctx.fill();
@@ -1483,10 +1589,10 @@ window.addEventListener('resize',resizeNeuralCanvas);
 
 function drawLines(){
   ctx.clearRect(0,0,canvas.width,canvas.height);
-  drbGlowPhase+=0.02;
+  drbGlowPhase+=0.018;
   const now=performance.now();
 
-  /* ── 각 엣지 그룹 렌더링 ── */
+  /* ─── 엣지 그룹별 유기 곡선 렌더링 ─── */
   const EDGE_GROUPS=[
     {edges:D_EDGES, letter:'D'},
     {edges:R_EDGES, letter:'R'},
@@ -1499,91 +1605,105 @@ function drawLines(){
     edges.forEach(([a,b])=>{
       const ca=getCenter(a),cb=getCenter(b);
       const vA=isVisited(a),vB=isVisited(b);
+
       if(!vA||!vB){
-        /* 미방문 줄기 — 더 얇고 희미하게 (뿌리가 잠든 느낌) */
-        ctx.setLineDash([4,8]);
-        drawLine(ca.x,ca.y,cb.x,cb.y,'rgba(255,255,255,0.035)','transparent',1,0);
+        /* 미방문 — 잠든 수상돌기: 점선 베지어 */
+        ctx.save();
+        ctx.setLineDash([3,10]);
+        drawCurve(ca.x,ca.y,cb.x,cb.y,
+          'rgba(62,255,216,0.04)','transparent',0.8,0,0.22);
         ctx.setLineDash([]);
+        ctx.restore();
         return;
       }
+
       const key=`${a}->${b}`;
       const flow=flowingEdges.get(key);
+
       if(flow&&!flow.done){
+        /* 성장 애니메이션 — 신경 신호 전파 */
         const t=Math.min(1,(now-flow.startTime)/FLOW_DUR);
-        const e=1-Math.pow(1-t,3);
-        drawPartialLine(ca.x,ca.y,cb.x,cb.y,e,col.stroke,col.shadow,3.5,16);
-        if(t>=1)flow.done=true;
-      }else{
+        const ease=1-Math.pow(1-t,3);
+        drawPartialCurve(ca.x,ca.y,cb.x,cb.y,ease,col.stroke,col.shadow,2.8,14);
+        if(t>=1) flow.done=true;
+      } else {
         if(complete){
-          const p=0.6+0.4*Math.sin(drbGlowPhase);
-          const gs=col.stroke.replace('0.9',(0.7+0.3*p).toFixed(2));
-          const gh=col.shadow.replace('0.7',(0.5+0.4*p).toFixed(2));
-          drawLine(ca.x,ca.y,cb.x,cb.y,gs,gh,4.5,20+14*p);
-          drawNodeGlow(ca.x,ca.y,col.stroke,28+10*p);
-          drawNodeGlow(cb.x,cb.y,col.stroke,28+10*p);
-        }else{
-          drawLine(ca.x,ca.y,cb.x,cb.y,col.stroke,col.shadow,3,12);
+          /* 완성된 뉴런 — 발광 곡선 + 세포체 글로우 */
+          const p=0.55+0.45*Math.sin(drbGlowPhase);
+          const gs=col.stroke.replace('0.9',(0.65+0.3*p).toFixed(2));
+          const gh=col.shadow.replace('0.7',(0.45+0.4*p).toFixed(2));
+          drawCurve(ca.x,ca.y,cb.x,cb.y,gs,gh,3.2,18+12*p,0.28);
+          drawNodeGlow(ca.x,ca.y,col.stroke,26+9*p);
+          drawNodeGlow(cb.x,cb.y,col.stroke,26+9*p);
+        } else {
+          /* 활성 수상돌기 — 일반 발광 곡선 */
+          drawCurve(ca.x,ca.y,cb.x,cb.y,col.stroke,col.shadow,2.2,10,0.28);
         }
       }
     });
   });
 
-  /* ── 미래 → 실현 브릿지 ── */
+  /* ─── 실현 브릿지 — 황금 신호선 ─── */
   if(isDRBComplete()){
-    const p=0.5+0.5*Math.sin(drbGlowPhase*1.3);
+    const p=0.5+0.5*Math.sin(drbGlowPhase*1.2);
+    const bridgeAlpha=(0.4+0.38*p).toFixed(2);
+    const bridgeShadow=(0.3+0.28*p).toFixed(2);
     DRB_BRIDGE.forEach(([a,b])=>{
       const ca=getCenter(a),cb=getCenter(b);
-      ctx.setLineDash([8,5]);
-      drawLine(ca.x,ca.y,cb.x,cb.y,
-        `rgba(241,196,15,${(0.45+0.4*p).toFixed(2)})`,
-        `rgba(241,196,15,${(0.35+0.3*p).toFixed(2)})`,2.5,14+8*p);
+      /* 황금 곡선 — 반대 방향 곡률로 자연스럽게 */
+      ctx.save();
+      ctx.setLineDash([6,4]);
+      drawCurve(ca.x,ca.y,cb.x,cb.y,
+        `rgba(255,224,102,${bridgeAlpha})`,
+        `rgba(255,200,0,${bridgeShadow})`,
+        2,12+7*p, -0.18);
       ctx.setLineDash([]);
+      ctx.restore();
     });
-    /* DRB 완성 문구 */
     if(!document.getElementById('drb-complete-overlay').classList.contains('show')){
-      const cx=canvas.width/2,cy=canvas.height-48;
-      ctx.font=`900 ${Math.round(canvas.width*0.02)}px sans-serif`;
+      const cx=canvas.width/2, cy=canvas.height-44;
+      ctx.font=`700 ${Math.round(canvas.width*0.018)}px sans-serif`;
       ctx.textAlign='center';
-      ctx.fillStyle=`rgba(241,196,15,${(0.5+0.45*Math.sin(drbGlowPhase*0.9)).toFixed(2)})`;
-      ctx.shadowColor='rgba(241,196,15,0.8)';ctx.shadowBlur=20;
-      ctx.fillText('✦ 과거 · 현재 · 미래 · 실현 ✦',cx,cy);
+      const fa=(0.45+0.4*Math.sin(drbGlowPhase*0.85)).toFixed(2);
+      ctx.fillStyle=`rgba(255,224,102,${fa})`;
+      ctx.shadowColor='rgba(255,200,0,0.7)';ctx.shadowBlur=18;
+      ctx.fillText('✦  과거 · 현재 · 미래 · 실현  ✦',cx,cy);
       ctx.shadowBlur=0;
     }
   }
 
-  /* ── 단계 레이블 — 수평 레이아웃 기준 상단 ── */
-  const fs=Math.max(12,Math.round(canvas.width*0.014));
-  ctx.font=`700 ${fs}px sans-serif`;
+  /* ─── 단계 레이블 ─── */
+  const fs=Math.max(11,Math.round(canvas.width*0.013));
+  ctx.font=`600 ${fs}px sans-serif`;
   ctx.textAlign='center';
 
   const LABELS=[
-    {letter:'D', label:'과거', ids:LETTER_ALL.D},
-    {letter:'R', label:'현재', ids:LETTER_ALL.R},
-    {letter:'B', label:'미래', ids:LETTER_ALL.B},
-    {letter:'S', label:'실현', ids:LETTER_ALL.S},
+    {letter:'D',label:'과거',ids:LETTER_ALL.D},
+    {letter:'R',label:'현재',ids:LETTER_ALL.R},
+    {letter:'B',label:'미래',ids:LETTER_ALL.B},
+    {letter:'S',label:'실현',ids:LETTER_ALL.S},
   ];
   LABELS.forEach(({letter,label,ids})=>{
     const col=LETTER_COLORS[letter];
     let minY=Infinity,sumX=0,cnt=0;
     ids.forEach(id=>{
-      const c=getCenter(id);
-      if(c.x===0&&c.y===0)return;
-      if(c.y<minY)minY=c.y;
-      sumX+=c.x;cnt++;
+      const cc=getCenter(id);
+      if(cc.x===0&&cc.y===0)return;
+      if(cc.y<minY)minY=cc.y; sumX+=cc.x; cnt++;
     });
     if(cnt===0)return;
-    const lx=sumX/cnt, ly=minY-30;
+    const lx=sumX/cnt, ly=minY-32;
     const vis=ids.some(id=>isVisited(id));
     const comp=isLetterComplete(letter);
-    const p=0.6+0.4*Math.sin(drbGlowPhase*1.05);
+    const p=0.6+0.4*Math.sin(drbGlowPhase);
     if(comp){
-      ctx.fillStyle=col.stroke.replace('0.9',(0.9+0.1*p).toFixed(2));
-      ctx.shadowColor=col.shadow;ctx.shadowBlur=18+10*p;
+      ctx.fillStyle=col.stroke.replace('0.9',(0.85+0.12*p).toFixed(2));
+      ctx.shadowColor=col.shadow;ctx.shadowBlur=16+10*p;
     }else if(vis){
-      ctx.fillStyle=col.stroke.replace('0.9','0.55');
-      ctx.shadowColor=col.shadow.replace('0.7','0.3');ctx.shadowBlur=7;
+      ctx.fillStyle=col.stroke.replace('0.9','0.5');
+      ctx.shadowColor=col.shadow.replace('0.7','0.25');ctx.shadowBlur=6;
     }else{
-      ctx.fillStyle='rgba(255,255,255,0.12)';ctx.shadowBlur=0;
+      ctx.fillStyle='rgba(62,255,216,0.1)';ctx.shadowBlur=0;
     }
     ctx.fillText(label,lx,ly);
     ctx.shadowBlur=0;
@@ -1593,92 +1713,182 @@ function drawLines(){
 }
 drawLines();
 
-/* 파티클 — 우주 배경 */
+/* ══════════════════════════════════════════════
+   세포막 배경 — 심해 유기체 멤브레인 패턴
+══════════════════════════════════════════════ */
 (()=>{
   const pc=document.getElementById('particle-canvas');
   const px=pc.getContext('2d');
-  const pts=[];
-  function rsz(){
-    pc.width=window.innerWidth;
-    pc.height=window.innerHeight;
-    // 리사이즈 시 위치 재분산
-    pts.forEach(p=>{
-      if(p.x>pc.width)  p.x=Math.random()*pc.width;
-      if(p.y>pc.height) p.y=Math.random()*pc.height;
-    });
+  let W,H;
+  const cells=[]; // 세포막 구조체
+  const spores=[]; // 미세 포자 (떠다니는 작은 점)
+  const dendrites=[]; // 수상돌기 배경 선
+
+  function resize(){
+    W=pc.width=window.innerWidth;
+    H=pc.height=window.innerHeight;
   }
-  rsz();
-  window.addEventListener('resize',rsz);
+  resize();
+  window.addEventListener('resize',resize);
 
-  // 별 파티클 생성 (3종: 소·중·대)
-  for(let i=0;i<180;i++){
-    const tier = i<120 ? 'small' : i<160 ? 'mid' : 'large';
-    pts.push({
-      x : Math.random()*pc.width,
-      y : Math.random()*pc.height,
-      r : tier==='small' ? Math.random()*0.9+0.4
-        : tier==='mid'   ? Math.random()*1.4+0.9
-        :                  Math.random()*2.2+1.6,
-      vx: (Math.random()-0.5)*(tier==='large'?0.08:0.18),
-      vy: (Math.random()-0.5)*(tier==='large'?0.06:0.14),
-      a : Math.random()*Math.PI*2,
-      spd: Math.random()*0.008+0.006,
-      // 색상 팔레트: 청록/흰/연보라
-      hue: Math.random()<0.6 ? 'cyan'
-         : Math.random()<0.5 ? 'white' : 'purple',
-      tier
-    });
+  /* ── 세포막 구조 생성 ── */
+  function makeCells(){
+    cells.length=0;
+    const count=Math.floor((W*H)/55000)+8;
+    for(let i=0;i<count;i++){
+      cells.push({
+        x:Math.random()*W, y:Math.random()*H,
+        rx: 40+Math.random()*90,
+        ry: 25+Math.random()*55,
+        rot: Math.random()*Math.PI,
+        phase: Math.random()*Math.PI*2,
+        spd: 0.003+Math.random()*0.005,
+        vx:(Math.random()-0.5)*0.12,
+        vy:(Math.random()-0.5)*0.08,
+        alpha: 0.025+Math.random()*0.055,
+        // 색상: 청록 / 보라 / 암적
+        hue: Math.random()<0.55?'teal':Math.random()<0.6?'purple':'red',
+      });
+    }
   }
 
-  function anim(){
-    px.clearRect(0,0,pc.width,pc.height);
-    pts.forEach(p=>{
-      p.x+=p.vx; p.y+=p.vy; p.a+=p.spd;
-      if(p.x<0)p.x=pc.width; if(p.x>pc.width)p.x=0;
-      if(p.y<0)p.y=pc.height; if(p.y>pc.height)p.y=0;
-
-      const flicker = 0.55 + 0.45*Math.sin(p.a);
-
-      // 색상별 rgba
-      let color;
-      if(p.hue==='cyan')   color=`rgba(0,242,254,${(flicker*0.75).toFixed(2)})`;
-      else if(p.hue==='white') color=`rgba(210,235,255,${(flicker*0.65).toFixed(2)})`;
-      else                 color=`rgba(192,132,252,${(flicker*0.6).toFixed(2)})`;
-
-      // 큰 별: 십자 글로우
-      if(p.tier==='large'){
-        px.save();
-        px.shadowColor = p.hue==='cyan' ? 'rgba(0,242,254,0.9)'
-                       : p.hue==='white'? 'rgba(200,230,255,0.8)'
-                       :                  'rgba(192,132,252,0.9)';
-        px.shadowBlur = 8+6*flicker;
-        px.beginPath();px.arc(p.x,p.y,p.r,0,Math.PI*2);
-        px.fillStyle=color; px.fill();
-        // 십자 광선
-        const gl=p.r*3.5*flicker;
-        const grd=px.createLinearGradient(p.x-gl,p.y,p.x+gl,p.y);
-        grd.addColorStop(0,'transparent');
-        grd.addColorStop(0.5,color);
-        grd.addColorStop(1,'transparent');
-        px.beginPath();px.rect(p.x-gl,p.y-0.5,gl*2,1);
-        px.fillStyle=grd;px.fill();
-        const grd2=px.createLinearGradient(p.x,p.y-gl,p.x,p.y+gl);
-        grd2.addColorStop(0,'transparent');
-        grd2.addColorStop(0.5,color);
-        grd2.addColorStop(1,'transparent');
-        px.beginPath();px.rect(p.x-0.5,p.y-gl,1,gl*2);
-        px.fillStyle=grd2;px.fill();
-        px.restore();
-      } else {
-        // 소·중: 단순 원 + 미세 글로우
-        px.save();
-        px.shadowColor = p.hue==='cyan'?'rgba(0,242,254,0.6)':'rgba(200,220,255,0.5)';
-        px.shadowBlur  = p.tier==='mid' ? 4+3*flicker : 2;
-        px.beginPath();px.arc(p.x,p.y,p.r,0,Math.PI*2);
-        px.fillStyle=color; px.fill();
-        px.restore();
+  /* ── 배경 수상돌기 (매우 얇은 유기 곡선) ── */
+  function makeDendrites(){
+    dendrites.length=0;
+    for(let i=0;i<18;i++){
+      const sx=Math.random()*W, sy=Math.random()*H;
+      const branches=[];
+      let cx=sx,cy=sy;
+      for(let b=0;b<6+Math.floor(Math.random()*6);b++){
+        const angle=Math.random()*Math.PI*2;
+        const len=30+Math.random()*80;
+        branches.push({
+          x1:cx,y1:cy,
+          x2:cx+Math.cos(angle)*len,
+          y2:cy+Math.sin(angle)*len,
+          cp1x:cx+Math.cos(angle+0.6)*len*0.5,
+          cp1y:cy+Math.sin(angle+0.6)*len*0.5,
+        });
+        cx+=Math.cos(angle)*len*0.3;
+        cy+=Math.sin(angle)*len*0.3;
       }
+      dendrites.push({
+        branches,
+        alpha:0.03+Math.random()*0.06,
+        hue:Math.random()<0.6?'teal':'purple',
+        phase:Math.random()*Math.PI*2,
+        spd:0.002+Math.random()*0.003,
+      });
+    }
+  }
+
+  /* ── 포자 ── */
+  function makeSpores(){
+    spores.length=0;
+    for(let i=0;i<60;i++){
+      spores.push({
+        x:Math.random()*W, y:Math.random()*H,
+        r:0.6+Math.random()*2.2,
+        vx:(Math.random()-0.5)*0.15,
+        vy:(Math.random()-0.5)*0.1,
+        phase:Math.random()*Math.PI*2,
+        spd:0.01+Math.random()*0.015,
+        hue:Math.random()<0.6?'teal':Math.random()<0.5?'purple':'amber',
+      });
+    }
+  }
+
+  makeCells(); makeDendrites(); makeSpores();
+
+  /* ── 색상 헬퍼 ── */
+  function cellColor(hue,a){
+    if(hue==='teal')   return `rgba(62,255,216,${a.toFixed(3)})`;
+    if(hue==='purple') return `rgba(179,136,255,${a.toFixed(3)})`;
+    return                    `rgba(255,100,100,${a.toFixed(3)})`;
+  }
+
+  let t=0;
+  function anim(){
+    px.clearRect(0,0,W,H);
+    t+=0.008;
+
+    /* 1. 배경 수상돌기 — 얇은 유기 곡선 */
+    dendrites.forEach(d=>{
+      d.phase+=d.spd;
+      const a=d.alpha*(0.6+0.4*Math.sin(d.phase));
+      px.save();
+      px.strokeStyle=d.hue==='teal'?`rgba(62,255,216,${a})`:`rgba(179,136,255,${a})`;
+      px.lineWidth=0.5;
+      d.branches.forEach(b=>{
+        px.beginPath();
+        px.moveTo(b.x1,b.y1);
+        px.quadraticCurveTo(b.cp1x,b.cp1y,b.x2,b.y2);
+        px.stroke();
+      });
+      px.restore();
     });
+
+    /* 2. 세포막 — 타원형 윤곽 */
+    cells.forEach(cell=>{
+      cell.x+=cell.vx; cell.y+=cell.vy;
+      cell.phase+=cell.spd;
+      if(cell.x<-150) cell.x=W+150;
+      if(cell.x>W+150) cell.x=-150;
+      if(cell.y<-100) cell.y=H+100;
+      if(cell.y>H+100) cell.y=-100;
+
+      const pulse=0.65+0.35*Math.sin(cell.phase);
+      const a=cell.alpha*pulse;
+
+      px.save();
+      px.translate(cell.x,cell.y);
+      px.rotate(cell.rot+t*0.02);
+
+      // 외막
+      px.beginPath();
+      px.ellipse(0,0,cell.rx,cell.ry,0,0,Math.PI*2);
+      px.strokeStyle=cellColor(cell.hue,a*1.8);
+      px.lineWidth=0.6;
+      px.stroke();
+
+      // 내막 (약간 작게)
+      px.beginPath();
+      px.ellipse(0,0,cell.rx*0.65,cell.ry*0.65,0,0,Math.PI*2);
+      px.strokeStyle=cellColor(cell.hue,a*0.7);
+      px.lineWidth=0.4;
+      px.setLineDash([4,8]);
+      px.stroke();
+      px.setLineDash([]);
+
+      // 핵 (중심 미세 발광)
+      const gr=px.createRadialGradient(0,0,0,0,0,cell.ry*0.3);
+      gr.addColorStop(0,cellColor(cell.hue,a*1.2));
+      gr.addColorStop(1,'transparent');
+      px.beginPath();
+      px.ellipse(0,0,cell.rx*0.3,cell.ry*0.3,0,0,Math.PI*2);
+      px.fillStyle=gr;
+      px.fill();
+
+      px.restore();
+    });
+
+    /* 3. 포자 — 미세 발광 입자 */
+    spores.forEach(s=>{
+      s.x+=s.vx; s.y+=s.vy; s.phase+=s.spd;
+      if(s.x<0)s.x=W; if(s.x>W)s.x=0;
+      if(s.y<0)s.y=H; if(s.y>H)s.y=0;
+      const fl=0.5+0.5*Math.sin(s.phase);
+      let sc;
+      if(s.hue==='teal')   sc=`rgba(62,255,216,${(fl*0.6).toFixed(2)})`;
+      else if(s.hue==='purple') sc=`rgba(179,136,255,${(fl*0.5).toFixed(2)})`;
+      else                      sc=`rgba(255,200,100,${(fl*0.45).toFixed(2)})`;
+      px.save();
+      px.shadowColor=sc; px.shadowBlur=s.r*4*fl;
+      px.beginPath();px.arc(s.x,s.y,s.r,0,Math.PI*2);
+      px.fillStyle=sc;px.fill();
+      px.restore();
+    });
+
     requestAnimationFrame(anim);
   }
   anim();
@@ -1798,7 +2008,7 @@ window.addEventListener('resize',applyLayout);
 /* 키보드 힌트 (상시 표시, 희미) */
 const kh=document.createElement('div');
 kh.id='key-hint-bar';
-kh.style.cssText='position:fixed;bottom:38px;left:50%;transform:translateX(-50%);color:rgba(0,242,254,0.32);font-size:0.62rem;letter-spacing:3px;z-index:999;pointer-events:none;text-transform:uppercase;transition:opacity 2s ease;white-space:nowrap;';
+kh.style.cssText='position:fixed;bottom:38px;left:50%;transform:translateX(-50%);color:rgba(62,255,216,0.28);font-size:0.62rem;letter-spacing:3px;z-index:999;pointer-events:none;text-transform:uppercase;transition:opacity 2s ease;white-space:nowrap;';
 kh.textContent='← → 방향키 또는 SPACE 로 이동 가능합니다';
 document.body.appendChild(kh);
 setTimeout(()=>kh.style.opacity='0',6000);
@@ -2126,7 +2336,7 @@ body{
   padding:12px 20px;display:flex;align-items:center;justify-content:space-between;
   flex-shrink:0;
 }
-.logo{font-size:11px;font-weight:700;color:#00f2fe;letter-spacing:3px;font-family:monospace}
+.logo{font-size:11px;font-weight:700;color:#3effd8;letter-spacing:3px;font-family:monospace}
 .timer{font-family:monospace;font-size:22px;font-weight:700;color:#f1c40f;letter-spacing:2px}
 .timer.warn{color:#ff6b6b;animation:blink 1s ease-in-out infinite}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:0.4}}
@@ -2138,7 +2348,7 @@ body{
   border-radius:20px;letter-spacing:1px;margin-bottom:6px;
 }
 .phase-past  {background:rgba(255,107,107,0.12);color:#ff6b6b;border:1px solid rgba(255,107,107,0.3)}
-.phase-present{background:rgba(0,242,254,0.1);color:#00f2fe;border:1px solid rgba(0,242,254,0.3)}
+.phase-present{background:rgba(62,255,216,0.1);color:#3effd8;border:1px solid rgba(62,255,216,0.3)}
 .phase-future{background:rgba(192,132,252,0.1);color:#c084fc;border:1px solid rgba(192,132,252,0.3)}
 .phase-demo  {background:rgba(241,196,15,0.1);color:#f1c40f;border:1px solid rgba(241,196,15,0.3)}
 
@@ -2154,7 +2364,7 @@ body{
   border-radius:10px;padding:16px;
   font-size:14px;line-height:2;color:#d0d8e8;
   white-space:pre-wrap;word-break:keep-all;
-  border-left:3px solid #00f2fe;
+  border-left:3px solid rgba(62,255,216,0.7);
 }
 
 .tip-box{
@@ -2191,8 +2401,8 @@ body{
   width:7px;height:7px;border-radius:50%;
   background:rgba(255,255,255,0.15);transition:background 0.3s;
 }
-.node-dot.done{background:rgba(0,242,254,0.6)}
-.node-dot.active{background:#00f2fe;box-shadow:0 0 6px #00f2fe}
+.node-dot.done{background:rgba(62,255,216,0.55)}
+.node-dot.active{background:#3effd8;box-shadow:0 0 8px rgba(62,255,216,0.8)}
 </style>
 </head>
 <body>
@@ -2240,9 +2450,9 @@ function renderStep(data, stepIdx){
   const btnHtml = data.steps.map((s, i) => \`
     <button onclick="goStep(\${i})"
       style="width:100%;text-align:left;padding:9px 14px;margin-bottom:6px;
-        border-radius:8px;border:1px solid \${i===stepIdx ? 'rgba(0,242,254,0.6)' : 'rgba(255,255,255,0.08)'};
-        background:\${i===stepIdx ? 'rgba(0,242,254,0.1)' : 'transparent'};
-        color:\${i===stepIdx ? '#00f2fe' : 'rgba(255,255,255,0.4)'};
+        border-radius:8px;border:1px solid \${i===stepIdx ? 'rgba(62,255,216,0.6)' : 'rgba(255,255,255,0.08)'};
+        background:\${i===stepIdx ? 'rgba(62,255,216,0.1)' : 'transparent'};
+        color:\${i===stepIdx ? '#3effd8' : 'rgba(255,255,255,0.4)'};
         font-size:13px;font-weight:\${i===stepIdx ? '700' : '400'};
         cursor:pointer;font-family:inherit;transition:0.2s;">
       \${i===stepIdx ? '▶ ' : ''}\${s.btn}
