@@ -747,9 +747,10 @@ strong.white{color:#fff;font-weight:900;font-size:clamp(1.3rem,2.2vw,1.8rem);let
 
   <div id="ai-demo-box">
     <div id="preset-btns">
+      <button class="preset-btn" onclick="setPreset('q3')">👤 신입 온보딩</button>
       <button class="preset-btn" onclick="setPreset('q1')">📦 수출 포장 계산</button>
+      <button class="preset-btn" onclick="setPreset('q4')">❓ 데이터 없을 때</button>
       <button class="preset-btn" onclick="setPreset('q2')">🚛 차량 배차 추천</button>
-      <button class="preset-btn" onclick="setPreset('q3')">👤 신입 온보딩 </button>
     </div>
 
     <!-- 영상 프레임 (버튼 클릭 시 슬라이드업) -->
@@ -776,7 +777,7 @@ strong.white{color:#fff;font-weight:900;font-size:clamp(1.3rem,2.2vw,1.8rem);let
               같은 폴더에 영상 파일을 넣고<br>
               아래 파일명을 수정해주세요
             </div>
-            <div class="ph-filename">📁 q1.mp4 / q2.mp4 / q3.mp4</div>
+            <div class="ph-filename">📁 q1.mp4 / q2.mp4 / q3.mp4 / q4.mp4</div>
           </div>
         </div>
       </div>
@@ -1369,12 +1370,13 @@ const VIDEO_MAP = {
   q1: 'q1.mp4',
   q2: 'q2.mp4',
   q3: 'q3.mp4',
+  q4: 'q4.mp4',   // 데이터 없을 때 피드백 영상
 };
 
 /* 영상 오버레이 — 전체화면 페이드 방식 */
 function showVideoFrame(key){
   const src    = VIDEO_MAP[key];
-  const labels = {q1:'수출 포장 계산', q2:'차량 배차 추천', q3:'신입 온보딩'};
+  const labels = {q1:'수출 포장 계산', q2:'차량 배차 추천', q3:'신입 온보딩', q4:'데이터 없을 때 피드백'};
   document.getElementById('vov-title').textContent =
     'LOGIBOT · ' + (labels[key] || '실시간 시연');
 
@@ -2113,11 +2115,21 @@ const PRESENTER_SCRIPTS = {
         이 과정에서 발생하는 시간 지체는 곧 기회의 손실로 이어집니다. 
         이제 로지봇이 이 문제를 어떻게 해결하는지 보여드리겠습니다."(동영상 ON)
         실제 현장에서 발생할 법한 복잡한 적재 문의를 입력해 보겠습니다 (답변이 나올때까지 Wait)
-        단순히 텍스트만 내뱉는 것이 아니라, DRB의 표준 파렛트 규격과 컨테이너별 제원 데이터를 즉시 결합하여 계산하고 정확한 수치 계산, 최적의 조합 제시, 실무적 리스크 관리까지 제시합니다.`,        
+        단순히 텍스트만 내뱉는 것이 아니라, DRB의 표준 파렛트 규격과 컨테이너별 제원 데이터를 즉시 결합하여 계산하고 정확한 수치 계산, 최적의 조합 제시, 실무적 리스크 관리까지 제시합니다.`,
         tip: '결과 나오면 10초 침묵. 청중 스스로 임팩트를 느끼게 할 것.'
       },
       {
-        btn: '🚛 시연 3 · 차량 배차 추천',
+        btn: '❓ 시연 3 · 데이터 없을 때',
+        script: `물론 로지봇이 모든 질문에 답할 수 있는 건 아닙니다.
+데이터가 없거나 학습 범위를 벗어난 질문을 받으면 어떻게 되는지 보여드리겠습니다.
+(동영상 ON)
+"모른다"고 솔직하게 말하고, 피드백을 요청합니다.
+이 피드백이 앞서 보여드린 재학습 사이클의 원료가 됩니다.
+틀린 답을 자신 있게 내놓는 시스템보다, 한계를 인식하고 개선을 요청하는 시스템이 실무에서 훨씬 더 신뢰할 수 있습니다.`,
+        tip: '"모른다고 말한다" — 오히려 신뢰 포인트. 자신 있게 말할 것. 05번 피드백 루프와 연결.'
+      },
+      {
+        btn: '🚛 시연 4 · 차량 배차 추천',
         script: `마지막으로 빈번하면서 까다로운 질문인 이 물건, 어떤 차에 실어 보내야 하나요?.
               이 질문은 자재마다 무게가 다르고, 파렛트 크기도 다르기 때문에 까다롭습니다.
               (동영상 ON)
