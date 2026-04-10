@@ -1928,11 +1928,20 @@ function playClosingTransition(){
 /* 아웃트로 — BGM 8초 페이드아웃 */
 function startOutro(){
   document.getElementById('thankyou-btn').style.display='none';
-  if(soundOn) bgmFadeTo(0, 8000);
+
   // 발표자 창 → 클로징 멘트 탭(인덱스 4)으로 즉시 전환
   syncPresenterStep(4);
-  // 감사합니다 화면은 5초 뒤에 표시
-  setTimeout(()=>{ doOutroVisual(); }, 29000);
+
+  // BGM — 29초에 걸쳐 조금씩 고조 (0.02 → 0.10)
+  if(soundOn){
+    bgmFadeTo(0.10, 29000);
+  }
+
+  // 29초 후 화면 암전 + 고조된 BGM 서서히 페이드아웃
+  setTimeout(()=>{
+    doOutroVisual();
+    if(soundOn) bgmFadeTo(0, 8000);
+  }, 29000);
 }
 
 function doOutroVisual(){
