@@ -1928,20 +1928,11 @@ function playClosingTransition(){
 /* 아웃트로 — BGM 8초 페이드아웃 */
 function startOutro(){
   document.getElementById('thankyou-btn').style.display='none';
-
+  if(soundOn) bgmFadeTo(0, 8000);
   // 발표자 창 → 클로징 멘트 탭(인덱스 4)으로 즉시 전환
   syncPresenterStep(4);
-
-  // BGM — 29초에 걸쳐 조금씩 고조 (0.02 → 0.10)
-  if(soundOn){
-    bgmFadeTo(0.10, 29000);
-  }
-
-  // 29초 후 화면 암전 + 고조된 BGM 서서히 페이드아웃
-  setTimeout(()=>{
-    doOutroVisual();
-    if(soundOn) bgmFadeTo(0, 8000);
-  }, 29000);
+  // 감사합니다 화면은 5초 뒤에 표시
+  setTimeout(()=>{ doOutroVisual(); }, 29000);
 }
 
 function doOutroVisual(){
@@ -2213,7 +2204,7 @@ body{
 .body{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px}
 
 .phase-badge{
-  display:inline-block;font-size:11px;font-weight:700;padding:4px 12px;
+  display:inline-block;font-size:13px;font-weight:700;padding:5px 14px;
   border-radius:20px;letter-spacing:1px;margin-bottom:6px;
 }
 .phase-past  {background:rgba(255,107,107,0.12);color:#ff6b6b;border:1px solid rgba(255,107,107,0.3)}
@@ -2221,32 +2212,32 @@ body{
 .phase-future{background:rgba(192,132,252,0.1);color:#c084fc;border:1px solid rgba(192,132,252,0.3)}
 .phase-demo  {background:rgba(241,196,15,0.1);color:#f1c40f;border:1px solid rgba(241,196,15,0.3)}
 
-.node-title{font-size:18px;font-weight:700;color:#fff;margin-bottom:12px;line-height:1.3}
+.node-title{font-size:22px;font-weight:700;color:#fff;margin-bottom:12px;line-height:1.3}
 
 .section-label{
-  font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;
+  font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase;
   color:rgba(255,255,255,0.3);margin-bottom:6px;font-family:monospace;
 }
 
 .script-box{
   background:#1a1e27;border:1px solid rgba(255,255,255,0.07);
-  border-radius:10px;padding:16px;
-  font-size:14px;line-height:2;color:#d0d8e8;
+  border-radius:10px;padding:18px;
+  font-size:17px;line-height:2;color:#d0d8e8;
   white-space:pre-wrap;word-break:keep-all;
   border-left:3px solid #00f2fe;
 }
 
 .tip-box{
   background:rgba(241,196,15,0.06);border:1px solid rgba(241,196,15,0.2);
-  border-radius:8px;padding:10px 14px;
-  font-size:12px;color:rgba(241,196,15,0.85);line-height:1.6;
+  border-radius:8px;padding:11px 15px;
+  font-size:14px;color:rgba(241,196,15,0.85);line-height:1.6;
 }
-.tip-box::before{content:'💡 ';font-size:12px}
+.tip-box::before{content:'💡 ';font-size:14px}
 
 .next-box{
   background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);
-  border-radius:8px;padding:10px 14px;
-  font-size:12px;color:rgba(255,255,255,0.45);
+  border-radius:8px;padding:11px 15px;
+  font-size:14px;color:rgba(255,255,255,0.45);
 }
 .next-box::before{content:'다음 → ';color:rgba(255,255,255,0.25);font-weight:700}
 
@@ -2255,14 +2246,14 @@ body{
   gap:12px;color:rgba(255,255,255,0.2);
 }
 .waiting-icon{font-size:48px;opacity:0.3}
-.waiting-text{font-size:13px;letter-spacing:2px}
+.waiting-text{font-size:15px;letter-spacing:2px}
 
 .footer{
   background:#13161d;border-top:1px solid rgba(255,255,255,0.08);
   padding:10px 20px;display:flex;align-items:center;justify-content:space-between;
   flex-shrink:0;
 }
-.shortcut{font-size:11px;color:rgba(255,255,255,0.25);letter-spacing:1px}
+.shortcut{font-size:12px;color:rgba(255,255,255,0.25);letter-spacing:1px}
 .node-indicator{
   display:flex;gap:5px;align-items:center;
 }
@@ -2279,7 +2270,7 @@ body{
   padding:12px 14px 0;flex-shrink:0;
 }
 .step-tab{
-  padding:6px 13px;border-radius:20px;font-size:11px;font-weight:700;
+  padding:7px 15px;border-radius:20px;font-size:13px;font-weight:700;
   border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.04);
   color:rgba(255,255,255,0.4);cursor:pointer;transition:all 0.2s;
   letter-spacing:0.5px;white-space:nowrap;
@@ -2297,21 +2288,21 @@ body{
   display:flex;align-items:center;gap:10px;flex-shrink:0;
 }
 .step-label{
-  font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;
+  font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase;
   color:rgba(241,196,15,0.6);font-family:monospace;
 }
 .step-script{
   background:#1a1e27;border:1px solid rgba(255,255,255,0.07);
-  border-radius:10px;padding:14px 16px;
-  font-size:13.5px;line-height:2.0;color:#d0d8e8;
+  border-radius:10px;padding:16px 18px;
+  font-size:17px;line-height:2.0;color:#d0d8e8;
   white-space:pre-wrap;word-break:keep-all;
   border-left:3px solid rgba(241,196,15,0.6);
   flex:1;
 }
 .step-tip{
   background:rgba(241,196,15,0.06);border:1px solid rgba(241,196,15,0.2);
-  border-radius:8px;padding:10px 14px;
-  font-size:12px;color:rgba(241,196,15,0.85);line-height:1.6;flex-shrink:0;
+  border-radius:8px;padding:11px 15px;
+  font-size:14px;color:rgba(241,196,15,0.85);line-height:1.6;flex-shrink:0;
 }
 .step-tip::before{content:'💡 '}
 </style>
@@ -2367,7 +2358,7 @@ function renderStep(data){
   content.innerHTML = \`
     <div style="flex-shrink:0;padding:10px 14px 0;">
       <span class="phase-badge \${getPhaseClass(data.phase)}">\${data.phase}</span>
-      <span style="font-size:13px;font-weight:700;color:#fff;margin-left:8px;">\${data.title}</span>
+      <span style="font-size:16px;font-weight:700;color:#fff;margin-left:8px;">\${data.title}</span>
     </div>
     <div class="step-tabs" id="step-tabs">\${tabsHtml}</div>
     <div class="step-content" id="step-content"></div>
