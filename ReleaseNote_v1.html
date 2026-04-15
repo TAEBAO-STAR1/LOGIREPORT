@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>LOGIBOT 리포트</title>
+    <style>
+        :root {
+            --primary: #10b981; /* 로지봇 테마색 (에메랄드) */
+            --bg: #0f172a;
+            --card-bg: #1e293b;
+            --text: #f8fafc;
+        }
+        body {
+            font-family: 'Pretendard', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0; padding: 40px;
+            display: flex; flex-direction: column; align-items: center;
+        }
+        .container { max-width: 900px; width: 100%; }
+        
+        /* 헤더 섹션 */
+        header { text-align: center; margin-bottom: 50px; }
+        .version-badge {
+            background: var(--primary); color: #000;
+            padding: 5px 15px; border-radius: 20px; font-weight: bold; font-size: 0.9rem;
+        }
+        h1 { font-size: 2.5rem; margin: 15px 0; letter-spacing: -1px; }
+
+        /* 인포그래픽 그리드 */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            padding: 25px; border-radius: 16px;
+            border-top: 4px solid var(--primary);
+            transition: transform 0.3s ease;
+        }
+        .card:hover { transform: translateY(-5px); }
+        .card h2 { color: var(--primary); font-size: 1.2rem; margin-top: 0; display: flex; align-items: center; }
+        .card h2 i { margin-right: 10px; }
+
+        ul { list-style: none; padding: 0; }
+        li { margin-bottom: 12px; font-size: 0.95rem; line-height: 1.5; color: #cbd5e1; }
+        li::before { content: "•"; color: var(--primary); font-weight: bold; display: inline-block; width: 1em; }
+
+        /* 하단 의견 수렴 영역 */
+        .footer-note {
+            margin-top: 50px; text-align: center;
+            padding: 20px; border: 1px dashed #475569; border-radius: 12px;
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <span class="version-badge">Update v1.0</span>
+        <h1>LOGIBOT: Closed Beta</h1>
+        <p style="color: #94a3b8;">업무 효율화를 위한 로지봇 릴리즈 공유 및 의견 수렴</p>
+    </header>
+
+    <div class="grid">
+        <div class="card">
+            <h2><i class="fas fa-rocket"></i> 릴리즈 노트 (What's New)</h2>
+            <ul>
+                <li><strong>개선요청 버튼 생성</strong></li>
+                <li><strong>파일 분석 제거</strong> </li>
+                <li><strong>시뮬레이터 결과 개선</strong> </li>
+                <li><strong>고정 아이피 안정화</strong> </li>
+                <li><strong>사이드바 고정</strong> </li>
+                <li><strong>BAD FEEDBACK 재학습</strong> </li>
+            </ul>
+        </div>
+
+        <div class="card" style="border-top-color: #f59e0b;">
+            <h2 style="color: #f59e0b;"><i class="fas fa-exclamation-triangle"></i> 집중 개선 과제 (Pain Points)</h2>
+            <ul>
+                <li>할루시네이션 제거</li>
+                <li>더 나은 사용자 경험</li>
+            </ul>
+        </div>
+
+        <div class="card" style="border-top-color: #3b82f6;">
+            <h2 style="color: #3b82f6;"><i class="fas fa-lightbulb"></i> Next Step (Future)</h2>
+            <ul>
+                <li><strong>SAP 및 G/W 연동으로 데이터 확장</strong></li>
+                <li><strong>철저한 보안</strong> </li>
+                <li><strong>대상 부서 확장</strong> </li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="footer-note">
+        <p>💡 <strong>여러분의 의견이 로지봇을 키웁니다.</strong><br>
+        회의 중 제안해주시는 모든 아이디어는 다음 업데이트에 적극 반영될 예정입니다.</p>
+    </div>
+</div>
+
+</body>
+</html>

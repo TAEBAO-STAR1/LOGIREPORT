@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LIKE System: 8-Level Hyper Zoom</title>
+    <style>
+        :root {
+            --bg: #000205;
+            --primary: #00f2fe;
+            --accent: #4facfe;
+            --white: #ffffff;
+            --zoom-speed: 2s; /* 조금 더 웅장하게 느린 속도 */
+        }
+
+        body, html {
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            background-color: var(--bg); color: var(--white);
+            font-family: 'Pretendard', sans-serif; overflow: hidden;
+            perspective: 2000px;
+        }
+
+        /* 메인 줌 엔진 */
+        #stage {
+            position: relative; width: 100%; height: 100%;
+            transform-style: preserve-3d;
+            transition: transform var(--zoom-speed) cubic-bezier(0.7, 0, 0.2, 1);
+        }
+
+        .level {
+            position: absolute; width: 100vw; height: 100vh;
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            backface-visibility: hidden; text-align: center;
+            transition: opacity 1.2s ease;
+            padding: 20px; box-sizing: border-box;
+        }
+
+        /* 8단계 레이어 배치 (3000px 간격) */
+        .lv-1 { transform: translateZ(0px); }
+        .lv-2 { transform: translateZ(-3000px); opacity: 0; }
+        .lv-3 { transform: translateZ(-6000px); opacity: 0; }
+        .lv-4 { transform: translateZ(-9000px); opacity: 0; }
+        .lv-5 { transform: translateZ(-12000px); opacity: 0; }
+        .lv-6 { transform: translateZ(-15000px); opacity: 0; }
+        .lv-7 { transform: translateZ(-18000px); opacity: 0; }
+        .lv-8 { transform: translateZ(-21000px); opacity: 0; }
+
+        .active { opacity: 1 !important; }
+
+        /* 디자인 요소 */
+        .step-tag { font-size: 0.9rem; letter-spacing: 4px; color: var(--accent); margin-bottom: 15px; }
+        h1 { font-size: 5rem; font-weight: 900; margin: 0; background: linear-gradient(to bottom, #fff, var(--primary)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+        .card { 
+            background: rgba(255,255,255,0.03); border: 1px solid rgba(0, 242, 254, 0.15);
+            padding: 40px; border-radius: 30px; margin-top: 40px; max-width: 700px;
+            backdrop-filter: blur(20px); box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+        }
+
+        /* 하단 컨트롤 바 */
+        .footer {
+            position: fixed; bottom: 40px; width: 100%; display: flex; 
+            justify-content: center; align-items: center; gap: 20px; z-index: 100;
+        }
+        .progress-bar { width: 200px; height: 2px; background: rgba(255,255,255,0.1); position: relative; }
+        .progress-fill { position: absolute; left: 0; top: 0; height: 100%; background: var(--primary); transition: 0.5s; width: 12.5%; }
+        
+        /* 볼륨 인디케이터 */
+        #vol-status { font-size: 0.7rem; color: var(--accent); opacity: 0.6; }
+    </style>
+</head>
+<body>
+
+    <audio id="bgm" loop>
+        <source src="your_epic_music.mp3" type="audio/mpeg">
+    </audio>
+
+    <div id="stage">
+        <div class="level lv-1 active">
+            <div class="step-tag">Phase 01: The Chaos</div>
+            <h1>Big Data Ocean</h1>
+            <div class="card">수조 건의 물류 데이터 파편들이 의미 없이 흩어져 있는 상태입니다.</div>
+        </div>
+
+        <div class="level lv-2">
+            <div class="step-tag">Phase 02: Ingestion</div>
+            <h1>Data Loader</h1>
+            <div class="card">`data_loader.py`가 가동됩니다. PDF, Excel에서 지식을 추출합니다.</div>
+        </div>
+
+        <div class="level lv-3">
+            <div class="step-tag">Phase 03: Atomization</div>
+            <h1>Embedding</h1>
+            <div class="card">텍스트가 768차원의 고정밀 벡터 숫자로 분해되어 본질만 남습니다.</div>
+        </div>
+
+        <div class="level lv-4">
+            <div class="step-tag">Phase 04: Storage</div>
+            <h1>Qdrant Vault</h1>
+            <div class="card">벡터 DB에 저장되어 초고속 지식 검색 인프라를 구축합니다.</div>
+        </div>
+
+        <div class="level lv-5">
+            <div class="step-tag">Phase 05: Intent</div>
+            <h1>Query Engine</h1>
+            <div class="card">`query_processor.py`가 사용자의 숨은 질문 의도를 간파합니다.</div>
+        </div>
+
+        <div class="level lv-6">
+            <div class="step-tag">Phase 06: Context</div>
+            <h1>RAG Retrieval</h1>
+            <div class="card">방대한 지식 창고에서 단 0.1초 만에 가장 관련 높은 근거를 찾아냅니다.</div>
+        </div>
+
+        <div class="level lv-7">
+            <div class="step-tag">Phase 07: Interface</div>
+            <h1>Streamlit App</h1>
+            <div class="card">`app.py`를 통해 현장 영업팀의 언어로 데이터가 재구성됩니다.</div>
+        </div>
+
+        <div class="level lv-8">
+            <div class="step-tag">Phase 08: Decision</div>
+            <h1>The Precision</h1>
+            <div class="card" style="border-color: #fff; background: rgba(0, 242, 254, 0.1);">
+                <b>[혁신적 의사결정 지원 완료]</b><br>
+                "최적의 물류 경로와 비용 절감안을 도출했습니다."
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">
+        <div id="vol-status">VOLUME: 20%</div>
+        <div class="progress-bar"><div class="progress-fill" id="fill"></div></div>
+        <div style="font-size: 0.8rem; color: #8b9bb4;">CLICK TO ZOOM IN</div>
+    </div>
+
+    <script>
+        let current = 1;
+        const total = 8;
+        const stage = document.getElementById('stage');
+        const fill = document.getElementById('fill');
+        const bgm = document.getElementById('bgm');
+        const volStatus = document.getElementById('vol-status');
+
+        document.body.addEventListener('click', () => {
+            // 음악 재생 시작 (첫 클릭 시)
+            if (bgm.paused) {
+                bgm.play();
+            }
+
+            if (current < total) {
+                current++;
+                
+                // 1. Z축 이동
+                const zDist = (current - 1) * 3000;
+                stage.style.transform = `translateZ(${zDist}px)`;
+                
+                // 2. 레이어 활성화
+                const nextLv = document.querySelector(`.lv-${current}`);
+                if (nextLv) nextLv.classList.add('active');
+
+                // 3. 프로그래스 바 업데이트
+                fill.style.width = `${(current / total) * 100}%`;
+
+                // 4. 볼륨 및 웅장함 제어 (단계별 10%씩 상승)
+                let newVol = Math.min(0.2 + (current * 0.1), 1.0);
+                bgm.volume = newVol;
+                volStatus.innerText = `VOLUME: ${Math.round(newVol * 100)}%`;
+
+            } else {
+                // 리셋 (임원들께 다시 보여드려야 할 때)
+                current = 1;
+                stage.style.transform = `translateZ(0px)`;
+                document.querySelectorAll('.level').forEach((l, i) => {
+                    if(i !== 0) l.classList.remove('active');
+                });
+                fill.style.width = `12.5%`;
+                bgm.volume = 0.2;
+                volStatus.innerText = `VOLUME: 20%`;
+            }
+        });
+
+        // 키보드 지원
+        window.addEventListener('keydown', (e) => {
+            if(e.key === "ArrowRight" || e.key === "Enter") document.body.click();
+        });
+    </script>
+</body>
+</html>

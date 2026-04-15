@@ -1,0 +1,1261 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LOGIBOT-DRB · 스마트 물류 AI 가이드</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=Outfit:wght@400;600;700;800;900&display=swap');
+
+:root {
+  --navy:       #0f172a;
+  --emerald:    #10b981;
+  --emerald-dk: #059669;
+  --emerald-lt: rgba(16,185,129,0.12);
+  --blue:       #2563eb;
+  --amber:      #f59e0b;
+  --rose:       #ef4444;
+  --purple:     #7c3aed;
+  --cyan:       #0ea5e9;
+  --slate-900:  #0f172a;
+  --slate-700:  #334155;
+  --slate-500:  #64748b;
+  --slate-300:  #cbd5e1;
+  --slate-100:  #f1f5f9;
+  --white:      #ffffff;
+  --bg:         #f0f4f8;
+  --sidebar-w:  290px;
+  --radius:     0.75rem;
+  --radius-lg:  1.25rem;
+  --font-head:  'Outfit', 'Noto Sans KR', sans-serif;
+  --font-body:  'Noto Sans KR', 'Outfit', sans-serif;
+}
+
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+html { font-size:16px; scroll-behavior:smooth; }
+body { font-family:var(--font-body); background:var(--bg); color:var(--slate-700); line-height:1.65; overflow:hidden; }
+.app { display:flex; height:100vh; width:100vw; }
+
+/* ── SIDEBAR ── */
+.sidebar {
+  position:fixed; left:0; top:0; width:var(--sidebar-w); height:100vh;
+  background:linear-gradient(180deg, var(--navy) 0%, #1e293b 100%);
+  display:flex; flex-direction:column; z-index:200; overflow-y:auto;
+  box-shadow: 4px 0 24px rgba(0,0,0,0.18);
+}
+.sb-header { padding:1.75rem 1.5rem 1.25rem; border-bottom:1px solid rgba(255,255,255,0.07); }
+.sb-logo { font-family:var(--font-head); font-size:1.7rem; font-weight:900; color:#fff; letter-spacing:-0.02em; }
+.sb-logo span { color:var(--emerald); }
+.sb-tagline { font-size:0.7rem; color:#64748b; margin-top:0.25rem; text-transform:uppercase; letter-spacing:0.12em; }
+.sb-badge {
+  display:inline-flex; align-items:center; gap:0.4rem; margin-top:0.75rem;
+  background:rgba(16,185,129,0.15); border:1px solid rgba(16,185,129,0.3);
+  color:var(--emerald); padding:0.3rem 0.75rem; border-radius:999px;
+  font-size:0.72rem; font-weight:700;
+}
+.sb-badge::before { content:'●'; font-size:0.5rem; animation: pulse-dot 1.5s ease-in-out infinite; }
+@keyframes pulse-dot { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+.sb-launch-btn {
+  display:flex; align-items:center; justify-content:center; gap:0.5rem;
+  margin-top:1rem; padding:0.75rem 1rem;
+  background:linear-gradient(135deg, var(--emerald), var(--emerald-dk));
+  color:#fff; font-family:var(--font-head); font-size:0.85rem; font-weight:700;
+  border-radius:0.65rem; text-decoration:none;
+  box-shadow:0 4px 14px rgba(16,185,129,0.4);
+  transition:all 0.25s; letter-spacing:0.01em;
+  border:1px solid rgba(255,255,255,0.15);
+}
+.sb-launch-btn:hover {
+  background:linear-gradient(135deg, #0fca8e, var(--emerald));
+  box-shadow:0 6px 20px rgba(16,185,129,0.55);
+  transform:translateY(-2px);
+}
+.sb-launch-btn:active { transform:translateY(0); }
+.sb-launch-icon { font-size:1.1rem; }
+
+.nav-section { padding:1rem 0; flex:1; }
+.nav-group-label {
+  padding:0.5rem 1.5rem 0.3rem;
+  font-size:0.62rem; font-weight:700; color:#475569;
+  text-transform:uppercase; letter-spacing:0.12em;
+}
+.nav-item {
+  display:flex; align-items:center; gap:0.85rem;
+  padding:0.6rem 1.5rem; color:#94a3b8;
+  cursor:pointer; transition:all 0.2s;
+  font-size:0.83rem; font-weight:500;
+  border-left:3px solid transparent;
+  user-select:none;
+}
+.nav-item:hover { background:rgba(255,255,255,0.05); color:#e2e8f0; transform:translateX(3px); }
+.nav-item.active {
+  background:rgba(16,185,129,0.1); color:var(--emerald);
+  border-left-color:var(--emerald); font-weight:700;
+}
+.nav-icon { font-size:1rem; width:20px; text-align:center; flex-shrink:0; }
+.nav-tag {
+  margin-left:auto; font-size:0.6rem; font-weight:700;
+  padding:0.15rem 0.45rem; border-radius:999px;
+}
+.nav-tag.new { background:rgba(16,185,129,0.2); color:var(--emerald); }
+.nav-tag.hot { background:rgba(239,68,68,0.2); color:#f87171; }
+
+.sb-footer { padding:1rem 1.5rem; border-top:1px solid rgba(255,255,255,0.07); font-size:0.68rem; color:#475569; }
+
+/* ── CONTENT ── */
+.content { margin-left:var(--sidebar-w); height:100vh; overflow-y:auto; flex:1; background:var(--bg); scroll-behavior:smooth; }
+.section { min-height:100vh; padding:3rem; animation:fadeUp 0.5s ease; }
+.section-eyebrow { font-size:0.72rem; font-weight:700; color:var(--emerald); text-transform:uppercase; letter-spacing:0.15em; margin-bottom:0.5rem; }
+.section-title { font-family:var(--font-head); font-size:2.4rem; font-weight:800; color:var(--slate-900); line-height:1.2; margin-bottom:0.75rem; }
+.section-desc { font-size:1rem; color:var(--slate-500); max-width:700px; line-height:1.7; margin-bottom:2rem; }
+
+@keyframes fadeUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+
+/* ── CARDS ── */
+.card {
+  background:var(--white); border-radius:var(--radius-lg);
+  border:1px solid #e2e8f0; padding:1.75rem;
+  transition:all 0.3s; box-shadow:0 1px 4px rgba(15,23,42,0.05);
+}
+.card:hover { transform:translateY(-4px); box-shadow:0 12px 28px rgba(15,23,42,0.1); }
+.card-title {
+  font-family:var(--font-head); font-size:1.05rem; font-weight:700;
+  color:var(--slate-900); margin-bottom:0.85rem;
+  display:flex; align-items:center; gap:0.5rem;
+}
+.card-body { font-size:0.9rem; color:var(--slate-500); line-height:1.8; }
+
+/* ── GRIDS ── */
+.grid-2 { display:grid; grid-template-columns:repeat(2,1fr); gap:1.25rem; margin:1.25rem 0; }
+.grid-3 { display:grid; grid-template-columns:repeat(3,1fr); gap:1.25rem; margin:1.25rem 0; }
+.grid-4 { display:grid; grid-template-columns:repeat(4,1fr); gap:1.25rem; margin:1.25rem 0; }
+
+/* ── STATS ── */
+.stats-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:1.25rem; margin:1.75rem 0; }
+.stat-card {
+  background:linear-gradient(135deg,#fff,#f8fafc);
+  border-radius:var(--radius-lg); padding:1.4rem 1.5rem;
+  border:1px solid #e2e8f0; text-align:center;
+  position:relative; overflow:hidden;
+  box-shadow:0 1px 4px rgba(15,23,42,0.05);
+}
+.stat-card::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; }
+.stat-card.emerald::before { background:linear-gradient(90deg,var(--emerald),var(--cyan)); }
+.stat-card.blue::before { background:linear-gradient(90deg,var(--blue),var(--purple)); }
+.stat-card.amber::before { background:linear-gradient(90deg,var(--amber),var(--rose)); }
+.stat-card.rose::before { background:linear-gradient(90deg,var(--rose),var(--purple)); }
+.stat-icon { font-size:2rem; margin-bottom:0.4rem; }
+.stat-value { font-family:var(--font-head); font-size:2rem; font-weight:800; color:var(--slate-900); }
+.stat-value.em { color:var(--emerald); }
+.stat-value.bl { color:var(--blue); }
+.stat-value.am { color:var(--amber); }
+.stat-label { font-size:0.72rem; color:var(--slate-500); line-height:1.5; margin-top:0.2rem; }
+.float1 { animation:f1 4s ease-in-out infinite; }
+.float2 { animation:f2 5s ease-in-out infinite; }
+.float3 { animation:f3 6s ease-in-out infinite; }
+@keyframes f1 { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
+@keyframes f2 { 0%,100%{transform:translateY(0)} 33%{transform:translateY(-5px)} 66%{transform:translateY(-2px)} }
+@keyframes f3 { 0%,100%{transform:translateY(0) scale(1)} 50%{transform:translateY(-4px) scale(1.01)} }
+
+/* ── HERO ── */
+.hero {
+  min-height:100vh; display:flex; flex-direction:column; justify-content:center;
+  padding:3rem; position:relative; overflow:hidden;
+  background:linear-gradient(135deg, #f0f4f8 0%, #e8f0fe 50%, #ecfdf5 100%);
+}
+.hero::before {
+  content:''; position:absolute; top:-20%; right:-10%; width:500px; height:500px;
+  border-radius:50%; background:radial-gradient(circle,rgba(16,185,129,0.08),transparent 70%);
+  animation:float 8s ease-in-out infinite;
+}
+.hero::after {
+  content:''; position:absolute; bottom:-20%; left:-5%; width:400px; height:400px;
+  border-radius:50%; background:radial-gradient(circle,rgba(37,99,235,0.06),transparent 70%);
+  animation:float 10s ease-in-out infinite reverse;
+}
+@keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-20px)} }
+.hero-eyebrow { font-size:0.78rem; font-weight:700; color:var(--emerald); text-transform:uppercase; letter-spacing:0.2em; margin-bottom:1rem; position:relative; z-index:1; }
+.hero-title {
+  font-family:var(--font-head); font-size:3.5rem; font-weight:900;
+  color:var(--slate-900); line-height:1.1; margin-bottom:1rem;
+  position:relative; z-index:1;
+}
+.hero-title .accent { color:var(--emerald); }
+.hero-subtitle { font-size:1.1rem; color:var(--slate-500); max-width:640px; line-height:1.7; margin-bottom:2rem; position:relative; z-index:1; }
+.hero-chips { display:flex; flex-wrap:wrap; gap:0.75rem; margin-bottom:2rem; position:relative; z-index:1; }
+.chip {
+  display:inline-flex; align-items:center; gap:0.4rem;
+  padding:0.45rem 1rem; border-radius:999px; font-size:0.8rem; font-weight:600;
+}
+.chip.g { background:rgba(16,185,129,0.12); color:var(--emerald-dk); border:1px solid rgba(16,185,129,0.25); }
+.chip.b { background:rgba(37,99,235,0.1); color:var(--blue); border:1px solid rgba(37,99,235,0.2); }
+.chip.o { background:rgba(245,158,11,0.12); color:#d97706; border:1px solid rgba(245,158,11,0.25); }
+
+/* ── PAIN CARDS ── */
+.pain-card {
+  background:var(--white); border-radius:var(--radius-lg); padding:1.75rem;
+  border:1px solid #e2e8f0; border-left:4px solid;
+  transition:all 0.3s; box-shadow:0 1px 4px rgba(15,23,42,0.05);
+}
+.pain-card:hover { transform:translateY(-4px); box-shadow:0 12px 28px rgba(15,23,42,0.1); }
+.pain-card.amber { border-left-color:var(--amber); }
+.pain-card.rose  { border-left-color:var(--rose); }
+.pain-card.slate { border-left-color:#94a3b8; }
+.pain-icon { font-size:2.2rem; margin-bottom:1rem; }
+.pain-title { font-family:var(--font-head); font-size:1.05rem; font-weight:700; color:var(--slate-900); margin-bottom:0.5rem; }
+.pain-desc { font-size:0.85rem; color:var(--slate-500); line-height:1.75; }
+
+/* ── FEATURE CARDS ── */
+.feature-row { display:flex; gap:1.5rem; align-items:flex-start; padding:1.25rem; background:var(--white); border-radius:var(--radius-lg); border:1px solid #e2e8f0; transition:all 0.3s; }
+.feature-row:hover { transform:translateX(6px); box-shadow:0 8px 20px rgba(15,23,42,0.08); }
+.feature-icon-box {
+  width:56px; height:56px; border-radius:14px; flex-shrink:0;
+  display:flex; align-items:center; justify-content:center;
+  font-size:1.5rem; box-shadow:0 4px 12px rgba(0,0,0,0.15);
+}
+.feature-icon-box.blue   { background:linear-gradient(135deg,#2563eb,#1d4ed8); }
+.feature-icon-box.em     { background:linear-gradient(135deg,#10b981,#059669); }
+.feature-icon-box.purple { background:linear-gradient(135deg,#7c3aed,#6d28d9); }
+.feature-icon-box.amber  { background:linear-gradient(135deg,#f59e0b,#d97706); }
+.feature-icon-box.cyan   { background:linear-gradient(135deg,#0ea5e9,#0284c7); }
+.feature-icon-box.rose   { background:linear-gradient(135deg,#ef4444,#dc2626); }
+.feature-text h4 { font-family:var(--font-head); font-size:1rem; font-weight:700; color:var(--slate-900); margin-bottom:0.35rem; }
+.feature-text p  { font-size:0.85rem; color:var(--slate-500); line-height:1.7; }
+.feature-text .tags { display:flex; gap:0.4rem; flex-wrap:wrap; margin-top:0.5rem; }
+.ftag { font-size:0.65rem; font-weight:600; padding:0.15rem 0.5rem; border-radius:999px; }
+.ftag.g { background:rgba(16,185,129,0.1); color:var(--emerald-dk); }
+.ftag.b { background:rgba(37,99,235,0.1); color:var(--blue); }
+
+/* ── TEAM CARDS ── */
+.team-card {
+  background:var(--white); border-radius:var(--radius-lg); padding:1.75rem;
+  border:1px solid #e2e8f0; transition:all 0.3s;
+  box-shadow:0 1px 4px rgba(15,23,42,0.05);
+}
+.team-card:hover { transform:translateY(-5px); box-shadow:0 16px 32px rgba(15,23,42,0.1); }
+.team-header { display:flex; align-items:center; gap:0.85rem; margin-bottom:1.25rem; }
+.team-emoji { font-size:2.2rem; }
+.team-name { font-family:var(--font-head); font-size:1.15rem; font-weight:800; color:var(--slate-900); }
+.team-sub  { font-size:0.75rem; color:var(--slate-500); margin-top:0.1rem; }
+.team-scenarios { display:flex; flex-direction:column; gap:0.5rem; }
+.scenario-item {
+  display:flex; align-items:flex-start; gap:0.65rem;
+  padding:0.6rem 0.85rem; border-radius:0.6rem; font-size:0.82rem;
+  background:var(--slate-100); color:var(--slate-700);
+}
+.scenario-q { color:var(--emerald-dk); font-weight:700; flex-shrink:0; font-size:0.75rem; }
+.team-divider { height:1px; background:#e2e8f0; margin:1rem 0; }
+.team-badge-row { display:flex; gap:0.5rem; flex-wrap:wrap; }
+.tbadge { font-size:0.68rem; font-weight:600; padding:0.2rem 0.6rem; border-radius:999px; }
+.tbadge.em { background:rgba(16,185,129,0.1); color:var(--emerald-dk); }
+.tbadge.bl { background:rgba(37,99,235,0.1); color:var(--blue); }
+.tbadge.pu { background:rgba(124,58,237,0.1); color:var(--purple); }
+
+/* ── HOW-TO STEP ── */
+.step-list { display:flex; flex-direction:column; gap:0; }
+.step-item {
+  display:flex; gap:1.25rem; padding:1.25rem 1.25rem 1.25rem 1.5rem;
+  border-left:2px solid #e2e8f0; margin-left:1.5rem; position:relative;
+}
+.step-item::before {
+  content:attr(data-n); position:absolute; left:-1.2rem; top:1.25rem;
+  width:2.2rem; height:2.2rem; border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  font-family:var(--font-head); font-size:0.8rem; font-weight:800;
+  background:var(--emerald); color:var(--white);
+  box-shadow:0 0 0 4px var(--bg);
+}
+.step-item.last { border-left:2px solid transparent; }
+.step-content h4 { font-family:var(--font-head); font-size:1rem; font-weight:700; color:var(--slate-900); margin-bottom:0.35rem; }
+.step-content p  { font-size:0.85rem; color:var(--slate-500); line-height:1.7; }
+.step-note {
+  margin-top:0.5rem; padding:0.6rem 0.85rem;
+  background:rgba(16,185,129,0.07); border-left:3px solid var(--emerald);
+  border-radius:0 0.5rem 0.5rem 0; font-size:0.78rem; color:#065f46;
+}
+
+/* ── TIMELINE ── */
+.timeline { display:flex; flex-direction:column; gap:0.6rem; margin:1.25rem 0; }
+.tl-item {
+  display:flex; gap:1rem; padding:0.85rem 1rem;
+  background:var(--white); border-radius:0.65rem;
+  border:1px solid #e2e8f0; border-left:3px solid;
+  transition:all 0.2s;
+}
+.tl-item:hover { transform:translateX(4px); background:#f8fafc; }
+.tl-item.em  { border-left-color:var(--emerald); }
+.tl-item.bl  { border-left-color:var(--blue); }
+.tl-item.am  { border-left-color:var(--amber); }
+.tl-item.pu  { border-left-color:var(--purple); }
+.tl-label { font-size:0.7rem; font-weight:700; min-width:60px; flex-shrink:0; padding-top:2px; }
+.tl-item.em .tl-label { color:var(--emerald-dk); }
+.tl-item.bl .tl-label { color:var(--blue); }
+.tl-item.am .tl-label { color:#d97706; }
+.tl-item.pu .tl-label { color:var(--purple); }
+.tl-text { font-size:0.85rem; color:var(--slate-700); line-height:1.6; }
+.tl-text strong { color:var(--slate-900); }
+
+/* ── FEEDBACK FLOW ── */
+.flow-chain { display:flex; align-items:center; gap:0; margin:1.5rem 0; flex-wrap:wrap; }
+.flow-node {
+  background:var(--white); border:1px solid #e2e8f0; border-radius:0.75rem;
+  padding:0.85rem 1.1rem; text-align:center; min-width:130px; font-size:0.82rem;
+  color:var(--slate-700); box-shadow:0 1px 4px rgba(0,0,0,0.04);
+}
+.flow-node .fn-icon { font-size:1.4rem; margin-bottom:0.3rem; }
+.flow-node strong { display:block; font-size:0.88rem; font-weight:700; color:var(--slate-900); }
+.flow-arrow { font-size:1.4rem; color:var(--emerald); padding:0 0.25rem; }
+
+/* ── FAQ ── */
+.faq-item { background:var(--white); border-radius:var(--radius); border:1px solid #e2e8f0; margin-bottom:0.6rem; overflow:hidden; }
+.faq-q {
+  padding:1rem 1.25rem; font-size:0.9rem; font-weight:700; color:var(--slate-900);
+  cursor:pointer; display:flex; justify-content:space-between; align-items:center;
+  transition:background 0.2s;
+}
+.faq-q:hover { background:#f8fafc; }
+.faq-q .toggle { font-size:1.2rem; color:var(--emerald); font-weight:900; transition:transform 0.3s; }
+.faq-a { padding:0 1.25rem 1rem; font-size:0.85rem; color:var(--slate-500); line-height:1.8; display:none; }
+.faq-item.open .faq-a { display:block; }
+.faq-item.open .toggle { transform:rotate(45deg); }
+
+/* ── ROADMAP ── */
+.roadmap { display:grid; grid-template-columns:repeat(3,1fr); gap:1.25rem; margin:1.5rem 0; }
+.rm-card {
+  background:var(--navy); border-radius:var(--radius-lg); padding:1.75rem;
+  position:relative; overflow:hidden;
+}
+.rm-card::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; }
+.rm-card.c1::before { background:linear-gradient(90deg,var(--emerald),var(--cyan)); }
+.rm-card.c2::before { background:linear-gradient(90deg,var(--blue),var(--purple)); }
+.rm-card.c3::before { background:linear-gradient(90deg,var(--amber),var(--rose)); }
+.rm-step { font-size:0.7rem; font-weight:700; color:var(--emerald); text-transform:uppercase; letter-spacing:0.12em; margin-bottom:0.5rem; }
+.rm-title { font-family:var(--font-head); font-size:1.15rem; font-weight:800; color:#fff; margin-bottom:0.5rem; }
+.rm-time { font-size:0.72rem; color:#64748b; margin-bottom:1rem; }
+.rm-list { list-style:none; }
+.rm-list li { font-size:0.82rem; color:#94a3b8; padding:0.3rem 0 0.3rem 1rem; position:relative; line-height:1.5; }
+.rm-list li::before { content:'▸'; position:absolute; left:0; color:var(--emerald); }
+
+/* ── TECH STACK ── */
+.tech-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:1rem; margin:1.5rem 0; }
+.tech-item {
+  background:var(--white); border-radius:var(--radius); padding:1.25rem;
+  border:1px solid #e2e8f0; text-align:center;
+}
+.tech-icon { font-size:1.8rem; margin-bottom:0.5rem; }
+.tech-name { font-size:0.88rem; font-weight:700; color:var(--slate-900); margin-bottom:0.25rem; }
+.tech-role { font-size:0.75rem; color:var(--slate-500); }
+
+/* ── HIGHLIGHT BOX ── */
+.highlight-box {
+  border-radius:var(--radius-lg); padding:1.5rem 1.75rem;
+  border:1px solid; margin:1.25rem 0;
+}
+.highlight-box.green { background:rgba(16,185,129,0.07); border-color:rgba(16,185,129,0.25); }
+.highlight-box.blue  { background:rgba(37,99,235,0.07); border-color:rgba(37,99,235,0.2); }
+.highlight-box.amber { background:rgba(245,158,11,0.07); border-color:rgba(245,158,11,0.2); }
+.highlight-box.rose  { background:rgba(239,68,68,0.07); border-color:rgba(239,68,68,0.2); }
+.highlight-box h5 { font-family:var(--font-head); font-size:0.95rem; font-weight:700; margin-bottom:0.6rem; }
+.highlight-box.green h5 { color:var(--emerald-dk); }
+.highlight-box.blue  h5 { color:var(--blue); }
+.highlight-box.amber h5 { color:#d97706; }
+.highlight-box.rose  h5 { color:var(--rose); }
+.highlight-box p,
+.highlight-box ul { font-size:0.85rem; color:var(--slate-600); line-height:1.8; }
+.highlight-box ul { padding-left:1.25rem; }
+
+/* ── TABLE ── */
+.data-table { width:100%; border-collapse:collapse; margin:1.25rem 0; font-size:0.85rem; }
+.data-table th { background:#e8f0fe; color:var(--slate-900); padding:0.75rem 1rem; text-align:left; font-weight:700; border-bottom:2px solid #c0cedf; }
+.data-table td { padding:0.65rem 1rem; border-bottom:1px solid #e8eef5; color:var(--slate-600); }
+.data-table tr:hover td { background:#f5f8fc; }
+
+/* ── DARK SECTION ── */
+.dark-section {
+  background:linear-gradient(135deg, var(--navy) 0%, #1e293b 100%);
+  color:#fff;
+}
+.dark-section .section-title { color:#fff; }
+.dark-section .section-desc  { color:#94a3b8; }
+
+/* ── PILL TAGS ── */
+.pill { display:inline-block; font-size:0.7rem; font-weight:600; padding:0.2rem 0.55rem; border-radius:999px; margin:0.15rem; }
+.pill.g  { background:rgba(16,185,129,0.12); color:var(--emerald-dk); }
+.pill.b  { background:rgba(37,99,235,0.1); color:var(--blue); }
+.pill.a  { background:rgba(245,158,11,0.12); color:#d97706; }
+.pill.r  { background:rgba(239,68,68,0.1); color:var(--rose); }
+.pill.p  { background:rgba(124,58,237,0.1); color:var(--purple); }
+
+/* ── SUB HEADER ── */
+.sub-header {
+  font-family:var(--font-head); font-size:1.05rem; font-weight:700;
+  color:var(--emerald-dk); margin:2rem 0 1rem;
+  padding-bottom:0.5rem; border-bottom:1px solid #d1fae5;
+}
+
+/* ── QUOTE ── */
+.quote { border-left:4px solid var(--emerald); padding:1rem 1.5rem; background:rgba(16,185,129,0.05); border-radius:0 0.75rem 0.75rem 0; margin:1.25rem 0; }
+.quote p { font-size:0.95rem; color:var(--slate-600); font-style:italic; line-height:1.8; }
+.quote-src { font-size:0.78rem; color:var(--slate-400); margin-top:0.4rem; }
+
+/* ── KEYBOARD HINTS ── */
+.kb-hints { position:fixed; bottom:1.25rem; right:1.25rem; display:flex; gap:0.75rem; z-index:300; opacity:0.5; transition:opacity 0.3s; }
+.kb-hints:hover { opacity:1; }
+.kb-hint { display:flex; align-items:center; gap:0.4rem; background:var(--white); padding:0.4rem 0.85rem; border-radius:0.5rem; font-size:0.72rem; color:var(--slate-500); border:1px solid #e2e8f0; }
+.key { display:inline-block; padding:0.15rem 0.4rem; background:#f1f5f9; border:1px solid #cbd5e1; border-radius:0.25rem; font-family:monospace; font-size:0.68rem; color:var(--emerald-dk); }
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar { width:5px; }
+::-webkit-scrollbar-track { background:var(--bg); }
+::-webkit-scrollbar-thumb { background:#cbd5e1; border-radius:3px; }
+::-webkit-scrollbar-thumb:hover { background:#94a3b8; }
+
+/* ── RESPONSIVE ── */
+@media(max-width:1200px){ .stats-grid{grid-template-columns:repeat(2,1fr)} .grid-3{grid-template-columns:1fr 1fr} }
+@media(max-width:900px) { .grid-2,.grid-3,.grid-4,.roadmap,.tech-grid{grid-template-columns:1fr} .sidebar{display:none} .content{margin-left:0} .hero-title{font-size:2.2rem} }
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- ─────────────── SIDEBAR ─────────────── -->
+<nav class="sidebar">
+  <div class="sb-header">
+    <div class="sb-logo">LOGI<span>BOT</span></div>
+    <div class="sb-tagline">DRB Logistics Intelligence</div>
+    <div class="sb-badge">테스트 운영 중 · Closed Beta</div>
+    <a href="http://192.168.115.25:8501" target="_blank" class="sb-launch-btn">
+      <span class="sb-launch-icon">🚀</span> LOGIBOT 바로 접속
+    </a>
+  </div>
+
+  <div class="nav-section" id="navSection">
+    <div class="nav-group-label">소개</div>
+    <div class="nav-item active" onclick="show('home')"><span class="nav-icon">🏠</span> 프로젝트 개요 <span class="nav-tag new">NEW</span></div>
+    <div class="nav-item" onclick="show('pain')"><span class="nav-icon">⚡</span> 도입 배경</div>
+    <div class="nav-item" onclick="show('solution')"><span class="nav-icon">🧠</span> 솔루션 구조</div>
+
+    <div class="nav-group-label" style="margin-top:0.75rem;">핵심 기능</div>
+    <div class="nav-item" onclick="show('features')"><span class="nav-icon">✨</span> 기능 소개</div>
+    <div class="nav-item" onclick="show('teams')"><span class="nav-icon">👥</span> 부서별 활용</div>
+
+    <div class="nav-group-label" style="margin-top:0.75rem;">사용 가이드</div>
+    <div class="nav-item" onclick="show('howto')"><span class="nav-icon">📖</span> 사용 방법</div>
+    <div class="nav-item" onclick="show('feedback')"><span class="nav-icon">💬</span> 피드백 & 학습</div>
+    <div class="nav-item" onclick="show('faq')"><span class="nav-icon">❓</span> FAQ</div>
+
+  </div>
+
+  <div class="sb-footer">
+    © 2026 DRB Logistics Transformation<br>
+    LOGIBOT v1.0 · Internal Use Only
+  </div>
+</nav>
+
+<!-- ─────────────── CONTENT ─────────────── -->
+<main class="content" id="contentArea">
+
+<!-- ══════════ 1. HOME ══════════ -->
+<div class="section hero" id="home">
+  <div class="hero-eyebrow" style="position:relative;z-index:1;">🚀 DRB LOGIBOT · 2026 Closed Beta Launch</div>
+  <h1 class="hero-title">영업팀을 위한<br><span class="accent">스마트 물류 AI 비서</span></h1>
+  <p class="hero-subtitle">
+    복잡한 물류 계산, 반복적인 전화 문의, 흩어진 정보 — <strong>LOGIBOT 하나로 해결합니다.</strong>
+    <br>자연어 질문만으로 배차 추천, 포장량 계산, 규정 조회까지 즉시 처리합니다.
+  </p>
+  <div class="hero-chips">
+    <span class="chip g">🤖 RAG 기반 AI 답변</span>
+    <span class="chip b">⚡ 실시간 계산 엔진</span>
+    <span class="chip o">📱 모바일·PC 모두 지원</span>
+    <span class="chip g">🔒 사내 전용 · 보안 운영</span>
+    <span class="chip b">📊 피드백 자동 학습</span>
+  </div>
+
+  <div class="stats-grid" style="position:relative;z-index:1;">
+    <div class="stat-card emerald float1">
+      <div class="stat-icon">⏱️</div>
+      <div class="stat-value em">80%</div>
+      <div class="stat-label">단순 문의 응대<br>시간 단축 목표</div>
+    </div>
+    <div class="stat-card blue float2">
+      <div class="stat-icon">🏢</div>
+      <div class="stat-value bl">2개</div>
+      <div class="stat-label">국내 · 해외영업팀 전용 모드<br>(트랙영업팀 도입 검토 예정)</div>
+    </div>
+    <div class="stat-card emerald float3">
+      <div class="stat-icon">📂</div>
+      <div class="stat-value em">11개</div>
+      <div class="stat-label">사내 데이터 시트<br>전부 학습 완료</div>
+    </div>
+    <div class="stat-card amber float1">
+      <div class="stat-icon">💬</div>
+      <div class="stat-value am">∞</div>
+      <div class="stat-label">질문 제한 없음<br>대화 히스토리 유지</div>
+    </div>
+  </div>
+
+  <div class="highlight-box green" style="position:relative;z-index:1;max-width:700px;">
+    <h5>🎯 LOGIBOT이 해결하는 핵심 문제</h5>
+    <p>"물류팀에게 문의 할 사항을 직접 전화해야 하나요?" — 더 이상 그럴 필요 없습니다.<br>
+    컨베어벨트 롤 직경 계산, 수출 PLT 포장 수량, 운임 비교까지 채팅창 하나로 즉시 해결하세요.</p>
+  </div>
+</div>
+
+<!-- ══════════ 2. PAIN ══════════ -->
+<div class="section" id="pain" style="display:none;">
+  <div class="section-eyebrow">⚡ Why LOGIBOT?</div>
+  <h2 class="section-title">우리가 겪어온 비효율,<br>이제는 끝낼 때입니다</h2>
+  <p class="section-desc">영업팀이 매일 반복하는 물류 문의 사이클을 데이터로 살펴봤습니다.<br> <strong>세 가지 핵심 문제가</strong> 업무 효율을 갉아먹고 있었습니다.</p>
+
+  <div class="grid-3">
+    <div class="pain-card amber">
+      <div class="pain-icon">📞</div>
+      <div class="pain-title">전화 업무 과부하</div>
+      <div class="pain-desc">
+        배차 가능 여부, 규격 확인, 납기 조회 등 단순 반복 질문으로 하루에도 수십 건의 전화가 물류팀과 영업팀 사이를 오갑니다. 상담 중 걸려온 전화, 이동 중 받기 어려운 전화. 양쪽 모두 집중 업무가 불가능합니다.
+      </div>
+    </div>
+    <div class="pain-card rose">
+      <div class="pain-icon">📊</div>
+      <div class="pain-title">수동 데이터 산출</div>
+      <div class="pain-desc">
+        수출 포장량 계산, 컨베어벨트 롤 직경 산출, 배차 차량 선정 — 이 모든 과정이 엑셀 파일을 열고 수식을 직접 입력하는 방식입니다. 수식 오류, 버전 불일치, 최신 데이터 반영 지연이 항상 리스크였습니다.
+      </div>
+    </div>
+    <div class="pain-card slate">
+      <div class="pain-icon">🗃️</div>
+      <div class="pain-title">정보 접근성 격차</div>
+      <div class="pain-desc">
+        물류 규정, 담당자 연락처, 차량 제원 데이터가 여러 파일과 공유폴더에 흩어져 있습니다. 신입 직원은 물론 베테랑 영업사원도 "어디에 있었더라..." 하고 검색하는 데 귀한 시간을 씁니다.
+      </div>
+    </div>
+  </div>
+
+  <div class="sub-header">📈 문제가 발생하는 전형적인 시나리오</div>
+  <div class="timeline">
+    <div class="tl-item bl">
+      <div class="tl-label">내부 문의</div>
+      <div class="tl-text">물류팀 또는 동료에게 전화·메신저로 문의 → <strong>상대방 업무 중단</strong>, 5~30분 대기</div>
+    </div>
+    <div class="tl-item am">
+      <div class="tl-label">엑셀 계산</div>
+      <div class="tl-text">담당자가 엑셀 파일 찾아서 열고, 수치 입력, 계산 → <strong>오류 가능성</strong>, 파일 버전 문제</div>
+    </div>
+    <div class="tl-item bl">
+      <div class="tl-label">재연락</div>
+      <div class="tl-text">결과값 다시 영업사원에게 전달 → 영업사원이 고객에게 재연락 → <strong>총 소요 시간: 30분~1시간</strong></div>
+    </div>
+  </div>
+
+  <div class="sub-header">💡 왜 지금인가?</div>
+  <div class="grid-2">
+    <div class="highlight-box blue">
+      <h5>🔬 기술이 준비되었습니다</h5>
+      <p>사내 온프레미스 모델과 Qdrant Vector DB를 통해 사내 데이터를 외부에 유출하지 않으면서 고품질 AI 답변이 가능해졌습니다. 이전까지는 불가능했던 조합입니다.</p>
+    </div>
+    <div class="highlight-box green">
+      <h5>📂 데이터가 준비되었습니다</h5>
+      <p>물류팀이 그간 축적해온 차량 데이터, 포장량 기준, 노선 데이터, 담당자 정보가 디지털화되어 AI가 즉시 참조할 수 있는 형태로 정리되었습니다.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ 3. SOLUTION ══════════ -->
+<div class="section" id="solution" style="display:none;">
+  <div class="section-eyebrow">🧠 Architecture</div>
+  <h2 class="section-title">LOGIBOT은<br>어떻게 동작하나요?</h2>
+  <p class="section-desc">복잡한 AI 기술을 최대한 쉽게 설명합니다. <br>크게 3단계로 이해하면 됩니다.</p>
+
+  <div class="step-list">
+    <div class="step-item" data-n="1">
+      <div class="step-content">
+        <h4>자연어 질문 입력</h4>
+        <p>채팅창에 자연어로 질문을 입력합니다. "6004010 자재에 대한 직경을 알려줘" 같이 평소 말하듯이 입력하면 됩니다. 자재코드, 지역명, 업무 키워드 모두 인식합니다.</p>
+        <div class="step-note">💡 자재코드 7자리만 입력해도 해당 자재의 모든 규격 정보를 자동으로 찾습니다</div>
+      </div>
+    </div>
+    <div class="step-item" data-n="2">
+      <div class="step-content">
+        <h4>AI 지식 검색 (RAG)</h4>
+        <p>질문의 의미를 분석해서 사내 데이터베이스에서 가장 관련 있는 문서를 찾습니다. 단순 키워드 검색이 아니라 의미 기반 벡터 검색으로 더 정확하게 찾아냅니다.</p>
+        <div class="step-note">💡 컨베어벨트 직경 계산인지, 배차 시뮬레이션인지, 포장량 계산인지 자동으로 도메인을 감지합니다</div>
+      </div>
+    </div>
+    <div class="step-item" data-n="3">
+      <div class="step-content">
+        <h4>AI 답변 생성</h4>
+        <p>찾아낸 데이터를 바탕으로 사내LLM 모델이 명확하고 구조화된 답변을 생성합니다. 계산이 필요한 경우 수식과 과정을 단계별로 보여줍니다.</p>
+        <div class="step-note">💡 답변에 '참고문서' 버튼이 있어 AI가 어떤 데이터를 근거로 답했는지 직접 확인할 수 있습니다</div>
+      </div>
+    </div>
+    <div class="step-item last" data-n="4">
+      <div class="step-content">
+        <h4>학습 & 개선</h4>
+        <p>👍 좋아요를 누르면 해당 답변이 학습 데이터로 저장되어 비슷한 질문에 더 나은 답변을 제공합니다. 👎 싫어요 + 사유를 입력하면 담당자에게 이메일로 즉시 알림이 갑니다.</p>
+        <div class="step-note">💡 피드백 받은 데이터는 AI 개선에 사용합니다</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sub-header">📚 AI가 학습한 사내 데이터</div>
+  <table class="data-table">
+    <thead><tr><th>데이터 시트</th><th>내용</th><th>활용 예시</th></tr></thead>
+    <tbody>
+      <tr><td>📦 포장량 산출 데이터</td><td>자재그룹별(B01·B02·N18·N19) 포장재 중량</td><td>수출 PLT 계산, 박스 수량 산출</td></tr>
+      <tr><td>📐 수출 포장량 산출 수식</td><td>컨테이너별 적재 계산 공식</td><td>"650박스 800kg → 몇 PLT?" 계산</td></tr>
+      <tr><td>🚚 차량 데이터</td><td>1톤~25톤 차량 적재함 제원</td><td>파렛트 수에 따른 최적 차량 추천</td></tr>
+      <tr><td>🗺️ 차량 노선 데이터</td><td>단거리/장거리 권역별 분류</td><td>지역별 직송 vs 화물 판단</td></tr>
+      <tr><td>📏 컨베어벨트 규격 데이터</td><td>자재코드별 고무두께·심체·PLY</td><td>롤 직경 자동 계산</td></tr>
+      <tr><td>🚜 크롤러 러버트랙 규격</td><td>자재코드별 PLT 적재 수량</td><td>RT 배차 시뮬레이션</td></tr>
+      <tr><td>👥 물류팀 현황 데이터</td><td>담당자명·직책·담당 공정·연락처</td><td>"내수 출고 담당자가 누구야?"</td></tr>
+      <tr><td>📋 물류팀 운영 규칙</td><td>주문 마감 시간, 배차 신청 방법 등 Q&A</td><td>업무 규정 질의</td></tr>
+      <tr><td>📦 파렛트·박스 데이터</td><td>PLT 규격, BOX 종류별 치수</td><td>수출 포장 기준 조회</td></tr>
+      <tr><td>📐 주름혹벨트 우든박스</td><td>사이즈별 우든박스 규격</td><td>포장 규격 문의</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ══════════ 4. FEATURES ══════════ -->
+<div class="section" id="features" style="display:none;">
+  <div class="section-eyebrow">✨ Core Features</div>
+  <h2 class="section-title">로지봇의<br>6가지 핵심 기능</h2>
+  <p class="section-desc">단순 챗봇이 아닙니다. <br>사내 물류 전문 데이터를 기반으로 즉각 계산하고, 추천하고, 안내합니다.</p>
+
+  <div class="grid-2" style="margin-bottom:1.5rem;">
+    <div class="feature-row">
+      <div class="feature-icon-box blue">🚚</div>
+      <div class="feature-text">
+        <h4>지능형 배차 시뮬레이터</h4>
+        <p>자재코드와 수량만 입력하면 파렛트 규격을 자동으로 계산하고 최적 차량 톤수를 즉시 추천합니다. 사이드바의 시뮬레이터에서는 실시간 적재율 게이지까지 확인 가능합니다.</p>
+        <div class="tags">
+          <span class="ftag g">자재코드 입력</span>
+          <span class="ftag g">PLT 자동계산</span>
+          <span class="ftag b">차량 추천</span>
+          <span class="ftag b">적재율 표시</span>
+        </div>
+      </div>
+    </div>
+    <div class="feature-row">
+      <div class="feature-icon-box em">📦</div>
+      <div class="feature-text">
+        <h4>수출 포장량 계산기</h4>
+        <p>목표 중량과 포장재 종류, 자재그룹을 선택하면 필요한 박스 수량과 PLT 수를 즉시 계산합니다. 복수 자재그룹도 한 번에 비교·계산할 수 있습니다.</p>
+        <div class="tags">
+          <span class="ftag g">B01·B02·N18·N19</span>
+          <span class="ftag g">컨테이너 분석</span>
+          <span class="ftag b">20ft / 40ft</span>
+        </div>
+      </div>
+    </div>
+    <div class="feature-row">
+      <div class="feature-icon-box purple">📐</div>
+      <div class="feature-text">
+        <h4>컨베어벨트 직경 계산</h4>
+        <p>자재코드를 입력하면 상고무·하고무·심체 수를 자동으로 찾아 포두께를 계산하고, 컨베어벨트 길이(M)를 입력하면 롤 직경까지 단계별로 산출합니다.</p>
+        <div class="tags">
+          <span class="ftag g">수식 자동 적용</span>
+          <span class="ftag b">단계별 계산 표시</span>
+        </div>
+      </div>
+    </div>
+    <div class="feature-row">
+      <div class="feature-icon-box amber">🗺️</div>
+      <div class="feature-text">
+        <h4>국내 운임 최적 비교</h4>
+        <p>도착 지역과 총 중량을 입력하면 단거리/장거리 판별 후 화물·택배 vs 직송 중 어느 쪽이 유리한지 즉시 알려줍니다. </p>
+        <div class="tags">
+          <span class="ftag g">지역 자동 판별</span>
+          <span class="ftag g">최적 운임 추천</span>
+          <span class="ftag b">근거 판단 표시</span>
+        </div>
+      </div>
+    </div>
+    <div class="feature-row">
+      <div class="feature-icon-box cyan">🔍</div>
+      <div class="feature-text">
+        <h4>RAG 사내 지식 검색</h4>
+        <p>물류 운영 규칙, 담당자 연락처, 주문 마감 시간, 샘플 발송 방법 등 텍스트 정보를 자연어 질문으로 바로 검색합니다. 참고 문서 원문도 키워드 하이라이트와 함께 확인 가능합니다.</p>
+        <div class="tags">
+          <span class="ftag g">담당자 조회</span>
+          <span class="ftag g">규정 안내</span>
+          <span class="ftag b">원문 팝업</span>
+        </div>
+      </div>
+    </div>
+    <div class="feature-row">
+      <div class="feature-icon-box rose">📁</div>
+      <div class="feature-text">
+        <h4>파일 업로드 분석</h4>
+        <p>엑셀 발주서를 올리면 중량 합산 후 배차 시뮬레이션을 자동 실행합니다. PDF 문서를 업로드하면 텍스트를 추출해 물류 관련 데이터를 분석합니다.</p>
+        <div class="tags">
+          <span class="ftag b">.xlsx / .csv</span>
+          <span class="ftag b">.pdf 텍스트 추출</span>
+          <span class="ftag g">자동 배차 분석</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="highlight-box amber">
+    <h5>💡 팁: 대화 히스토리 활용하기</h5>
+    <p>LOGIBOT은 이전 대화를 기억합니다. "위 자재코드의 우든박스 규격도 알려줘" 처럼 앞서 언급한 내용을 이어서 질문할 수 있습니다. <br>최대 10턴의 대화 맥락을 유지합니다.</p>
+  </div>
+</div>
+
+<!-- ══════════ 5. TEAMS ══════════ -->
+<div class="section" id="teams" style="display:none;">
+  <div class="section-eyebrow">👥 Team-Specific Modes</div>
+  <h2 class="section-title">부서별 맞춤<br>활용 시나리오</h2>
+  <p class="section-desc">화면 왼쪽 상단에서 팀을 선택하면 해당 팀의 추천 질문과 전용 시뮬레이터가 자동으로 활성화됩니다.</p>
+
+  <div class="grid-3">
+    <!-- 국내 -->
+    <div class="team-card">
+      <div class="team-header">
+        <div class="team-emoji">🚚</div>
+        <div>
+          <div class="team-name">국내영업팀</div>
+          <div class="team-sub">국내 배차 · 운임 · 담당자 조회</div>
+        </div>
+      </div>
+      <div class="team-scenarios">
+        <div class="scenario-item"><span class="scenario-q">Q</span> 국내 배차 신청 방법(수동/자동)</div>
+        <div class="scenario-item"><span class="scenario-q">Q</span> 주문 마감 시간이 언제야?</div>
+        <div class="scenario-item"><span class="scenario-q">Q</span> 내수용 PLT 규격 리스트</div>
+        <div class="scenario-item"><span class="scenario-q">Q</span> 부산 지입기사 정보</div>
+        <div class="scenario-item"><span class="scenario-q">Q</span> 국내 담당자 연락처</div>
+      </div>
+      <div class="team-divider"></div>
+      <div style="font-size:0.78rem;color:var(--slate-500);margin-bottom:0.6rem;font-weight:600;">🔧 전용 시뮬레이터</div>
+      <div class="team-badge-row">
+        <span class="tbadge em">운임 비교기</span>
+        <span class="tbadge bl">단거리/장거리 판별</span>
+        <span class="tbadge bl">최적 배송 추천</span>
+      </div>
+    </div>
+
+    <!-- 해외 -->
+    <div class="team-card">
+      <div class="team-header">
+        <div class="team-emoji">🚢</div>
+        <div>
+          <div class="team-name">해외영업팀</div>
+          <div class="team-sub">수출 포장 · 컨테이너 · 선적</div>
+        </div>
+      </div>
+      <div class="team-scenarios">
+        <div class="scenario-item"><span class="scenario-q">Q</span> 수출 포장량 계산 기준</div>
+        <div class="scenario-item"><span class="scenario-q">Q</span> 컨테이너 적재 시뮬레이션</div>
+        <div class="scenario-item"><span class="scenario-q">Q</span> 수출용 BOX 종류 알려줘</div>
+        <div class="scenario-item"><span class="scenario-q">Q</span> 샘플 보내는 방법</div>
+        <div class="scenario-item"><span class="scenario-q">Q</span> 수출 선적 서류 준비 리스트</div>
+      </div>
+      <div class="team-divider"></div>
+      <div style="font-size:0.78rem;color:var(--slate-500);margin-bottom:0.6rem;font-weight:600;">🔧 전용 시뮬레이터</div>
+      <div class="team-badge-row">
+        <span class="tbadge em">포장량 계산기</span>
+        <span class="tbadge em">PLT 자동산출</span>
+        <span class="tbadge bl">컨테이너 분석</span>
+        <span class="tbadge pu">20ft/40ft 추천</span>
+      </div>
+    </div>
+
+    <!-- 트랙 -->
+    <div class="team-card">
+      <div class="team-header">
+        <div class="team-emoji">🚜</div>
+        <div>
+          <div class="team-name">트랙영업팀(도입 검토중)</div>
+          <div class="team-sub">크롤러 · RT 배차 · 규격 조회</div>
+        </div>
+      </div>
+      <div class="team-scenarios">
+        <div class="scenario-item"><span class="scenario-q">Q</span> RT 종류별 적재 용량</div>
+        <div class="scenario-item"><span class="scenario-q">Q</span> RT 배차 시뮬레이션</div>
+        <div class="scenario-item"><span class="scenario-q">Q</span> RT 포장 규격 알려줘</div>
+        <div class="scenario-item"><span class="scenario-q">Q</span> 크롤러 담당자 정보</div>
+        <div class="scenario-item"><span class="scenario-q">Q</span> 배차 차량별 제원 표로</div>
+      </div>
+      <div class="team-divider"></div>
+      <div style="font-size:0.78rem;color:var(--slate-500);margin-bottom:0.6rem;font-weight:600;">🔧 전용 시뮬레이터</div>
+      <div class="team-badge-row">
+        <span class="tbadge em">배차 시뮬레이터</span>
+        <span class="tbadge bl">자재코드 조회</span>
+        <span class="tbadge pu">PLT→차량 추천</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ══════════ 6. HOW TO ══════════ -->
+<div class="section" id="howto" style="display:none;">
+  <div class="section-eyebrow">📖 User Guide</div>
+  <h2 class="section-title">처음 시작하는 법</h2>
+  <p class="section-desc">LOGIBOT 접속부터 첫 질문까지, 5분이면 충분합니다.</p>
+
+  <div class="sub-header">🚀 기본 사용 흐름</div>
+  <div class="step-list">
+    <div class="step-item" data-n="1">
+      <div class="step-content">
+        <h4>접속하기</h4>
+        <p>사내 네트워크(Wi-Fi 또는 VPN 연결)에서 지정된 URL로 접속합니다. 별도 로그인 없이 즉시 사용 가능합니다.</p>
+        <div class="step-note">🔗 접속 URL은 사이드바 버튼 혹은 물류팀에서 안내드립니다</div>
+      </div>
+    </div>
+    <div class="step-item" data-n="2">
+      <div class="step-content">
+        <h4>팀 선택하기</h4>
+        <p>화면 좌측 상단의 🚚 국내영업팀 / 🚢 해외영업팀 / 🚜 트랙영업팀 버튼 중 내 팀을 선택합니다. </p>
+        <div class="step-note">선택하면 팀 맞춤 추천 질문과 전용 시뮬레이터가 활성화됩니다.</div>
+      </div>
+    </div>
+    <div class="step-item" data-n="3">
+      <div class="step-content">
+        <h4>추천 질문으로 시작하기</h4>
+        <p>화면에 팀별 추천 질문 6개가 버튼으로 표시됩니다. 클릭 한 번으로 바로 질문할 수 있습니다. </p>
+        <div class="step-note">처음에는 추천 질문부터 눌러보며 어떤 답변이 나오는지 확인해보세요.</div>
+      </div>
+    </div>
+    <div class="step-item" data-n="4">
+      <div class="step-content">
+        <h4>직접 질문하기</h4>
+        <p>하단 채팅창에 질문을 직접 입력합니다. 평소 동료에게 물어보듯 자연스럽게 입력해도 됩니다. 자재코드, 지역명, 무게 단위 등을 포함하면 더 정확한 답변을 받을 수 있습니다.</p>
+        <div class="step-note">✅ 좋은 예: "6004010 자재 100PC 배차할 때 몇 PLT 나와?" <br>✅ 좋은 예: "부산 지역 500kg 발송 직송이 나아 화물이 나아?"</div>
+      </div>
+    </div>
+    <div class="step-item last" data-n="5">
+      <div class="step-content">
+        <h4>사이드바 시뮬레이터 활용하기</h4>
+        <p>좌측 사이드바 하단에는 팀별 전용 시뮬레이터가 있습니다. 숫자를 직접 입력하며 실시간으로 계산 결과를 확인할 수 있습니다. </p>
+        <div class="step-note">'이 결과로 상세 문의하기' 버튼으로 챗봇과 연동도 됩니다.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sub-header">💬 질문 잘 하는 법</div>
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title" style="color:#059669;">✅ 이렇게 하면 잘 됩니다</div>
+      <div class="card-body">
+        <ul style="padding-left:1.2rem;line-height:2;">
+          <li><strong>자재코드 7자리</strong>를 포함하면 정확도가 훨씬 높아집니다</li>
+          <li>무게, 수량, 지역 등 <strong>숫자 정보</strong>를 함께 입력하세요</li>
+          <li>"표로 정리해줘", "단계별로 설명해줘" 같이 <strong>형식을 요청</strong>해도 됩니다</li>
+          <li>이전 대화를 이어서 "그럼 그 자재 우든박스 규격도 알려줘"처럼 <strong>연속 질문</strong>도 가능합니다</li>
+          <li>정보가 없는 경우 <strong>"해당 정보를 찾을 수 없습니다"</strong>라고 솔직하게 알려줍니다</li>
+        </ul>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title" style="color:#dc2626;">⚠️ 이런 점을 주의하세요</div>
+      <div class="card-body">
+        <ul style="padding-left:1.2rem;line-height:2;">
+          <li>LOGIBOT은 <strong>사내 데이터 기반</strong>이라 외부 시세·뉴스는 정확도가 낮을 수 있습니다</li>
+          <li>계산 결과는 <strong>참고용</strong>이며, 실제 발주 전 담당자 최종 확인을 권장합니다</li>
+          <li><strong>개인정보나 기밀 정보</strong>는 입력하지 마세요</li>
+          <li>답변이 이상하면 <strong>👎 버튼</strong>으로 피드백을 남겨주세요. 빠르게 개선합니다</li>
+          <li>한 번에 너무 많은 내용을 물어보기보다 <strong>질문을 나눠서</strong> 입력하면 정확도가 높아집니다</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ 7. FEEDBACK ══════════ -->
+<div class="section" id="feedback" style="display:none;">
+  <div class="section-eyebrow">💬 Feedback & Learning</div>
+  <h2 class="section-title">여러분의 피드백이<br>AI를 성장시킵니다</h2>
+  <p class="section-desc">LOGIBOT은 사용할수록 더 좋아지는 학습형 AI입니다. <br>피드백이 쌓일수록 우리 회사에 최적화된 AI가 됩니다.</p>
+
+  <div class="sub-header">🔄 피드백 → 개선 사이클</div>
+  <div class="flow-chain">
+    <div class="flow-node">
+      <div class="fn-icon">💬</div>
+      <strong>질문 & 답변</strong>
+      <div style="font-size:0.72rem;color:var(--slate-400);margin-top:0.2rem;">LOGIBOT이 답변 제공</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node">
+      <div class="fn-icon">👍</div>
+      <strong>긍정 피드백</strong>
+      <div style="font-size:0.72rem;color:var(--slate-400);margin-top:0.2rem;">학습 DB에 저장</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node">
+      <div class="fn-icon">🧠</div>
+      <strong>AI 학습</strong>
+      <div style="font-size:0.72rem;color:var(--slate-400);margin-top:0.2rem;">유사 질문 성능 향상</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node">
+      <div class="fn-icon">⚡</div>
+      <strong>더 나은 답변</strong>
+      <div style="font-size:0.72rem;color:var(--slate-400);margin-top:0.2rem;">다음 질문부터 적용</div>
+    </div>
+  </div>
+
+  <div class="flow-chain" style="margin-top:0.75rem;">
+    <div class="flow-node">
+      <div class="fn-icon">💬</div>
+      <strong>질문 & 답변</strong>
+      <div style="font-size:0.72rem;color:var(--slate-400);margin-top:0.2rem;">LOGIBOT이 답변 제공</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node">
+      <div class="fn-icon">👎</div>
+      <strong>부정 피드백</strong>
+      <div style="font-size:0.72rem;color:var(--slate-400);margin-top:0.2rem;">사유 입력 팝업</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node">
+      <div class="fn-icon">📧</div>
+      <strong>이메일 알림</strong>
+      <div style="font-size:0.72rem;color:var(--slate-400);margin-top:0.2rem;">담당자 즉시 수신</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node">
+      <div class="fn-icon">📝</div>
+      <strong>데이터 개선</strong>
+      <div style="font-size:0.72rem;color:var(--slate-400);margin-top:0.2rem;">학습 문서 업데이트</div>
+    </div>
+  </div>
+
+  <div class="sub-header">👎 부정 피드백 시 어떻게 되나요?</div>
+  <div class="grid-2">
+    <div class="highlight-box blue">
+      <h5>📋 선택할 수 있는 피드백 사유</h5>
+      <ul>
+        <li>❌ 답변 내용이 틀렸어요</li>
+        <li>🔍 필요한 정보가 빠졌어요</li>
+        <li>😕 답변이 이해하기 어려워요</li>
+        <li>🚫 질문과 관련 없는 답변이에요</li>
+        <li>🔢 계산이 잘못되었어요</li>
+        <li>+ 추가 의견 직접 입력 (300자)</li>
+      </ul>
+    </div>
+    <div class="highlight-box green">
+      <h5>⚡ 피드백 처리 프로세스</h5>
+      <ul>
+        <li>부정 피드백 즉시 → 담당자에게 <strong>자동 이메일 발송</strong></li>
+        <li>이메일 내 버튼으로 SharePoint <strong>학습 데이터 문서 바로 열기</strong></li>
+        <li>담당자가 데이터 수정 → <strong>재학습 후 자동 반영</strong></li>
+        <li>같은 실수 반복 방지 → <strong>점점 정확해지는 AI</strong></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="quote">
+    <p>"LOGIBOT은 완성된 시스템이 아닙니다. 여러분이 매일 사용하고 피드백을 남길수록 DRB 물류에 최적화된 전문 AI로 성장합니다. 지금 가장 중요한 것은 많이 사용하고 솔직하게 피드백을 남기는 것입니다."</p>
+    <div class="quote-src">— LOGIBOT 개발팀</div>
+  </div>
+</div>
+
+<!-- ══════════ 8. FAQ ══════════ -->
+<div class="section" id="faq" style="display:none;">
+  <div class="section-eyebrow">❓ FAQ</div>
+  <h2 class="section-title">자주 묻는 질문</h2>
+  <p class="section-desc">LOGIBOT 사용 전 가장 많이 나오는 질문들을 모았습니다.</p>
+
+  <div class="faq-item open">
+    <div class="faq-q" onclick="toggleFaq(this)">
+      LOGIBOT은 항상 정확한 답변을 주나요?
+      <span class="toggle">+</span>
+    </div>
+    <div class="faq-a">
+      사내 데이터에 있는 정보는 높은 정확도로 답변합니다. 단, 데이터에 없는 내용은 "해당 정보를 찾을 수 없습니다"라고 솔직하게 안내합니다. 계산 결과는 검증을 거쳐 신뢰할 수 있지만, 실제 발주나 중요한 결정 전에는 담당자에게 최종 확인하는 것을 권장합니다. 오류를 발견하면 👎 피드백으로 알려주세요.
+    </div>
+  </div>
+
+  <div class="faq-item">
+    <div class="faq-q" onclick="toggleFaq(this)">
+      내 질문 내용이 외부에 유출되지 않나요?
+      <span class="toggle">+</span>
+    </div>
+    <div class="faq-a">
+      LOGIBOT은 사내 서버에서만 운영되는 온프레미스(On-Premise) 시스템입니다. ChatGPT나 외부 클라우드 AI 서비스를 사용하지 않으며, 모든 대화 내용은 사내 서버에만 저장됩니다. 외부 인터넷으로 데이터가 나가지 않습니다.
+    </div>
+  </div>
+
+  <div class="faq-item">
+    <div class="faq-q" onclick="toggleFaq(this)">
+      팀을 바꾸면 이전 대화 내용이 사라지나요?
+      <span class="toggle">+</span>
+    </div>
+    <div class="faq-a">
+      각 팀의 대화 세션은 독립적으로 유지됩니다. 국내영업팀에서 해외영업팀으로 전환해도, 국내영업팀에서 나눈 대화는 다시 국내영업팀으로 돌아오면 그대로 유지됩니다. 단, 브라우저를 완전히 새로고침하면 세션이 초기화됩니다.
+    </div>
+  </div>
+
+  <div class="faq-item">
+    <div class="faq-q" onclick="toggleFaq(this)">
+      계산 결과를 파일로 저장할 수 있나요?
+      <span class="toggle">+</span>
+    </div>
+    <div class="faq-a">
+      각 답변 아래의 📋 버튼을 클릭하면 답변 내용을 .txt 파일로 다운로드할 수 있습니다. 이후 엑셀이나 문서에 복사해 활용하세요.
+    </div>
+  </div>
+
+  <div class="faq-item">
+    <div class="faq-q" onclick="toggleFaq(this)">
+      LOGIBOT에 없는 정보를 요청하면 어떻게 되나요?
+      <span class="toggle">+</span>
+    </div>
+    <div class="faq-a">
+      사내 데이터에서 답을 찾지 못할 경우, 웹 검색을 통해 일반적인 정보를 제공하려 시도합니다. 이 경우 답변 마지막에 "🌐 웹 검색 기반"이라고 표시됩니다. 웹 기반 답변은 사내 데이터만큼 신뢰도가 높지 않으므로 주의하세요.
+    </div>
+  </div>
+
+  <div class="faq-item">
+    <div class="faq-q" onclick="toggleFaq(this)">
+      스마트폰에서도 사용 가능한가요?
+      <span class="toggle">+</span>
+    </div>
+    <div class="faq-a">
+      네, 모바일 브라우저(크롬, 사파리)에서 완벽하게 동작합니다. 사내 Wi-Fi 또는 VPN이 연결된 상태에서 동일한 URL로 접속하면 됩니다. 다만 화면이 작은 경우 사이드바 시뮬레이터보다는 채팅으로 질문하는 것이 편리합니다.
+    </div>
+  </div>
+
+  <div class="faq-item">
+    <div class="faq-q" onclick="toggleFaq(this)">
+      데이터가 틀려 있거나 업데이트가 필요하면 어떻게 하나요?
+      <span class="toggle">+</span>
+    </div>
+    <div class="faq-a">
+      👎 부정 피드백 버튼을 눌러 "답변 내용 오류"를 선택하고 추가 의견란에 올바른 정보를 입력해주세요. 담당자에게 자동으로 이메일 알림이 발송되어 데이터를 확인하고 업데이트합니다. 정기적으로 마스터 데이터를 갱신하는 프로세스도 운영 중입니다.
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ 9. ROADMAP ══════════ -->
+<div class="section dark-section" id="roadmap" style="display:none;">
+  <div class="section-eyebrow" style="color:var(--emerald);">🗺️ Launch Roadmap</div>
+  <h2 class="section-title">Open Beta 런칭 로드맵</h2>
+  <p class="section-desc" style="color:#94a3b8;">3단계 순차 오픈으로 안정적인 도입을 진행합니다. 지금은 Step 02 핵심 시연 단계입니다.</p>
+
+  <div class="roadmap">
+    <div class="rm-card c1">
+      <div class="rm-step">Step 01 — 완료 ✅</div>
+      <div class="rm-title">배경 공유</div>
+      <ul class="rm-list">
+        <li>현장 고충 사례 공유</li>
+        <li>개발 목적 및 기대 효과 설명</li>
+        <li>기술 스택 및 데이터 보안 안내</li>
+        <li>프로젝트 팀 소개</li>
+      </ul>
+    </div>
+    <div class="rm-card c2" style="border:1px solid rgba(16,185,129,0.4);">
+      <div class="rm-step" style="color:#60a5fa;">Step 02 — 현재 진행 중 🔴</div>
+      <div class="rm-title" style="color:#fff;">소개 및 시연</div>
+      <ul class="rm-list">
+        <li>PC/모바일 라이브 시연</li>
+        <li>클로즈 베타 시작</li>
+        <li>배차·포장·직경 계산 실습</li>
+        <li>사이드바 시뮬레이터 체험</li>
+        <li>피드백 시스템 설명</li>
+      </ul>
+    </div>
+    <div class="rm-card c3">
+      <div class="rm-step">Step 03 — 예정</div>
+      <div class="rm-title">참여 & 피드백</div>
+      <ul class="rm-list">
+        <li>G/W 및 SAP 연동</li>
+        <li>개선 의견 수렴 (설문)</li>
+        <li>오픈 베타 시작</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="sub-header" style="border-color:rgba(16,185,129,0.3);color:var(--emerald);">📅 향후 발전 계획</div>
+  <div class="grid-2">
+    <div class="card" style="background:rgba(255,255,255,0.05);border-color:rgba(255,255,255,0.1);">
+      <div class="card-title" style="color:#e2e8f0;">📊 단기 (1개월 내)</div>
+      <div class="card-body" style="color:#94a3b8;">
+        <ul style="padding-left:1.2rem;line-height:2;">
+          <li>오픈베타 피드백 수집 및 반영</li>
+          <li>자주 묻는 질문 패턴 분석</li>
+          <li>데이터 오류 수정 및 보완</li>
+          <li>응답 속도 최적화</li>
+        </ul>
+      </div>
+    </div>
+    <div class="card" style="background:rgba(255,255,255,0.05);border-color:rgba(255,255,255,0.1);">
+      <div class="card-title" style="color:#e2e8f0;">🚀 중장기 (3개월+)</div>
+      <div class="card-body" style="color:#94a3b8;">
+        <ul style="padding-left:1.2rem;line-height:2;">
+          <li>실시간 데이터 연동 (ERP, WMS)</li>
+          <li>이미지·도면 분석 기능 추가</li>
+          <li>주문 내역 기반 배차 자동 추천</li>
+          <li>다국어 지원 (영어·베트남어)</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="stats-grid" style="margin-top:2rem;">
+    <div class="stat-card emerald float1" style="background:rgba(255,255,255,0.07);border-color:rgba(255,255,255,0.1);">
+      <div class="stat-icon">👍</div>
+      <div class="stat-value em">지금</div>
+      <div class="stat-label" style="color:#94a3b8;">오픈 베타 시작<br>피드백 환영합니다</div>
+    </div>
+    <div class="stat-card blue float2" style="background:rgba(255,255,255,0.07);border-color:rgba(255,255,255,0.1);">
+      <div class="stat-icon">🎯</div>
+      <div class="stat-value bl">목표</div>
+      <div class="stat-label" style="color:#94a3b8;">문의 전화 80% 감소<br>계산 오류 Zero</div>
+    </div>
+    <div class="stat-card emerald float3" style="background:rgba(255,255,255,0.07);border-color:rgba(255,255,255,0.1);">
+      <div class="stat-icon">🤝</div>
+      <div class="stat-value em">함께</div>
+      <div class="stat-label" style="color:#94a3b8;">여러분의 피드백이<br>AI를 성장시킵니다</div>
+    </div>
+    <div class="stat-card amber float1" style="background:rgba(255,255,255,0.07);border-color:rgba(255,255,255,0.1);">
+      <div class="stat-icon">📈</div>
+      <div class="stat-value am">계속</div>
+      <div class="stat-label" style="color:#94a3b8;">사용할수록<br>똑똑해지는 AI</div>
+    </div>
+  </div>
+
+  <div style="margin-top:2.5rem;text-align:center;">
+    <div style="background:linear-gradient(135deg,rgba(16,185,129,0.2),rgba(37,99,235,0.2));border:1px solid rgba(16,185,129,0.3);border-radius:var(--radius-lg);padding:2rem;display:inline-block;max-width:500px;">
+      <div style="font-size:1.5rem;margin-bottom:0.5rem;">🚀</div>
+      <div style="font-family:var(--font-head);font-size:1.3rem;font-weight:800;color:#fff;margin-bottom:0.5rem;">지금 바로 LOGIBOT 체험하기</div>
+      <div style="font-size:0.85rem;color:#94a3b8;">QR코드 스캔 또는 URL 직접 입력</div>
+      <div style="margin-top:1.25rem;padding:0.75rem 2rem;background:var(--emerald);border-radius:0.75rem;color:#fff;font-weight:700;font-size:1rem;display:inline-block;cursor:pointer;">
+        접속 URL 확인하기
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ 10. TECH ══════════ -->
+<div class="section" id="tech" style="display:none;">
+  <div class="section-eyebrow">⚙️ Technical Architecture</div>
+  <h2 class="section-title">기술 아키텍처</h2>
+  <p class="section-desc">IT 담당자와 관심 있는 분들을 위한 기술 스택 설명입니다. 모든 처리는 사내 서버에서만 이루어집니다.</p>
+
+  <div class="sub-header">🔧 핵심 기술 스택</div>
+  <div class="tech-grid">
+    <div class="tech-item">
+      <div class="tech-icon">🤖</div>
+      <div class="tech-name">Gemma 3 27B</div>
+      <div class="tech-role">온프레미스 LLM · GPTQ 4bit 양자화<br>사내 GPU 서버 운영</div>
+    </div>
+    <div class="tech-item">
+      <div class="tech-icon">🧲</div>
+      <div class="tech-name">Granite Embedding</div>
+      <div class="tech-role">278M 파라미터 임베딩 모델<br>Ollama로 로컬 실행</div>
+    </div>
+    <div class="tech-item">
+      <div class="tech-icon">🗄️</div>
+      <div class="tech-name">Qdrant</div>
+      <div class="tech-role">벡터 데이터베이스<br>의미 기반 유사도 검색</div>
+    </div>
+    <div class="tech-item">
+      <div class="tech-icon">🌊</div>
+      <div class="tech-name">Streamlit</div>
+      <div class="tech-role">웹 UI 프레임워크<br>Python 기반 빠른 개발</div>
+    </div>
+    <div class="tech-item">
+      <div class="tech-icon">🔗</div>
+      <div class="tech-name">LangChain</div>
+      <div class="tech-role">RAG 파이프라인 구성<br>문서 검색·프롬프트 관리</div>
+    </div>
+    <div class="tech-item">
+      <div class="tech-icon">📊</div>
+      <div class="tech-name">Pandas + Plotly</div>
+      <div class="tech-role">데이터 처리 및 시각화<br>엑셀 분석 엔진</div>
+    </div>
+  </div>
+
+  <div class="sub-header">🗃️ 데이터 관리 구조</div>
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">📚 Qdrant 컬렉션 구조</div>
+      <div class="card-body">
+        <table class="data-table" style="font-size:0.78rem;">
+          <thead><tr><th>컬렉션</th><th>용도</th></tr></thead>
+          <tbody>
+            <tr><td><strong>logistics_data</strong></td><td>메인 문서 (답변 생성 시 검색)</td></tr>
+            <tr><td><strong>learning_history</strong></td><td>👍 긍정 피드백 누적 학습</td></tr>
+            <tr><td><strong>bad_feedback_history</strong></td><td>👎 부정 피드백 + 이메일 알림</td></tr>
+            <tr><td><strong>query_logs</strong></td><td>질문 로그 (분석용)</td></tr>
+            <tr><td><strong>answer_logs</strong></td><td>답변 로그 (분석용)</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">🔍 검색 전략 (Hybrid Search)</div>
+      <div class="card-body" style="font-size:0.85rem;line-height:1.9;">
+        <strong>자재코드 감지:</strong> 7자리 숫자가 포함된 질문은 키워드 필터 검색 우선 적용<br>
+        <strong>도메인 감지:</strong> conveyor / crawler / export / general 자동 분류<br>
+        <strong>벡터 검색:</strong> 의미 기반 코사인 유사도 검색 (k=50)<br>
+        <strong>수식 보완:</strong> 계산 도메인 감지 시 해당 산출 수식 문서 자동 추가<br>
+        <strong>대화 맥락:</strong> 최근 5턴 대화 히스토리 프롬프트에 포함
+      </div>
+    </div>
+  </div>
+
+  <div class="highlight-box green">
+    <h5>🔒 보안 & 개인정보 보호</h5>
+    <ul>
+      <li>모든 AI 처리는 사내 온프레미스 서버에서 실행 — 외부 API 미사용</li>
+      <li>대화 내용은 사내 Qdrant 서버에만 저장, 외부 전송 없음</li>
+      <li>사내 네트워크(내부 IP) 접근만 허용</li>
+      <li>부정 피드백 이메일에는 질문 내용이 포함되므로 민감 정보 입력 주의</li>
+    </ul>
+  </div>
+</div>
+
+</main>
+</div><!-- /.app -->
+
+<!-- KEYBOARD HINTS -->
+<div class="kb-hints">
+  <div class="kb-hint"><span class="key">←</span><span class="key">→</span> 섹션 이동</div>
+  <div class="kb-hint"><span class="key">ESC</span> 전체화면</div>
+</div>
+
+<script>
+var sections = ['home','pain','solution','features','teams','howto','feedback','faq'];
+var current = 0;
+
+function show(id) {
+  var idx = sections.indexOf(id);
+  if (idx < 0) return;
+  sections.forEach(function(s) {
+    var el = document.getElementById(s);
+    if (el) el.style.display = s === id ? 'block' : 'none';
+  });
+  current = idx;
+  document.querySelectorAll('.nav-item').forEach(function(item, i) {
+    item.classList.toggle('active', i === idx);
+  });
+  var ca = document.getElementById('contentArea');
+  if (ca) ca.scrollTo({ top:0, behavior:'smooth' });
+}
+
+function toggleFaq(el) {
+  var item = el.parentElement;
+  item.classList.toggle('open');
+}
+
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'ArrowRight' && current < sections.length - 1) { e.preventDefault(); show(sections[current+1]); }
+  if (e.key === 'ArrowLeft'  && current > 0)                   { e.preventDefault(); show(sections[current-1]); }
+  if (e.key === 'Escape') {
+    try {
+      if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+      else document.exitFullscreen();
+    } catch(err){}
+  }
+});
+
+// 초기 로드
+show('home');
+</script>
+</body>
+</html>

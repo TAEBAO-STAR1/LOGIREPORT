@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LIKE System: Neural Master Vision</title>
+    <style>
+        :root {
+            --bg: #00030a;
+            --primary: #00f2fe;
+            --accent: #4facfe;
+            --special: #f1c40f;
+            --node-bg: rgba(5, 10, 25, 0.95);
+            --transition: all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        body, html {
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            background-color: var(--bg); color: #fff;
+            font-family: 'Pretendard', sans-serif; overflow: hidden;
+            background-image: radial-gradient(circle at center, #001529 0%, #00030a 100%);
+        }
+
+        /* --- 상단 컨트롤 --- */
+        .back-btn {
+            position: fixed; top: 30px; left: 30px; z-index: 2000;
+            padding: 10px 25px; border: 1px solid var(--primary);
+            background: rgba(0, 242, 254, 0.1); color: var(--primary);
+            border-radius: 30px; cursor: pointer; font-size: 0.9rem; font-weight: bold;
+            backdrop-filter: blur(10px); transition: 0.3s;
+        }
+        .back-btn:hover { background: var(--primary); color: #000; box-shadow: 0 0 15px var(--primary); }
+
+        /* --- 배경 엔진 --- */
+        #neural-canvas { position: absolute; top: 0; left: 0; z-index: 1; pointer-events: none; }
+
+        /* --- 노드 디자인 --- */
+        .neuron-node {
+            position: absolute; width: 22px; height: 22px;
+            background: #1a2a3a; border: 2px solid var(--primary);
+            border-radius: 50%; z-index: 10; cursor: pointer;
+            transition: var(--transition); display: flex; align-items: center;
+        }
+
+        /* 숫자 및 키워드 라벨 기본 위치 */
+        .node-info {
+            position: absolute; left: 35px; white-space: nowrap;
+            display: flex; flex-direction: column; pointer-events: none;
+            transition: var(--transition);
+        }
+        .node-num { font-weight: 900; color: var(--primary); font-size: 1.3rem; line-height: 1; transition: var(--transition); }
+        .node-key { font-size: 0.75rem; color: rgba(255,255,255,0.7); letter-spacing: 1.5px; margin-top: 4px; transition: 0.3s; }
+
+        /* [핵심 수정] 노드 활성화 시 숫자 위치를 중앙 최상단으로 변경 */
+        .neuron-node.active .node-info {
+            left: 50% !important;
+            top: -60px !important; /* 박스 위쪽으로 배치 */
+            transform: translateX(-50%);
+        }
+        .neuron-node.active .node-num {
+            font-size: 4rem; /* 숫자를 더 크게 강조 */
+            opacity: 0.8;
+        }
+        .neuron-node.active .node-key {
+            opacity: 0; /* 아래 키워드 숨김 */
+        }
+
+        /* 상태별 노드 스타일 */
+        .neuron-node.visited { background: var(--primary); box-shadow: 0 0 25px var(--primary); }
+        .neuron-node.active {
+            width: 750px; height: 480px; border-radius: 30px;
+            background: var(--node-bg); top: 50% !important; left: 50% !important;
+            transform: translate(-50%, -50%) scale(1); z-index: 100; cursor: default;
+            border-width: 1px;
+        }
+
+        #n8 { border-color: var(--special); width: 26px; height: 26px; }
+        #n8.visited { background: var(--special); box-shadow: 0 0 30px var(--special); }
+        #n8.active .node-num { color: var(--special); }
+
+        /* 노드 내부 컨텐츠 */
+        .node-content { opacity: 0; transition: 0.5s; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 50px; box-sizing: border-box; }
+        .active .node-content { opacity: 1; }
+
+        /* 타이포그래피 */
+        h1 { 
+            font-size: 3.5rem; margin: 0; font-weight: 900;
+            background: linear-gradient(to right, #fff, var(--primary));
+            -webkit-background-clip: text; background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        #n8 h1 {
+            background: linear-gradient(to right, #fff, var(--special));
+            -webkit-background-clip: text; background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        p { font-size: 1.3rem; color: #a0aec0; line-height: 1.8; margin-top: 30px; max-width: 600px; }
+
+        /* --- 애니메이션 효과 --- */
+        #explosion {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0);
+            width: 50px; height: 50px; background: #fff; border-radius: 50%;
+            opacity: 0; z-index: 500; pointer-events: none;
+        }
+        @keyframes bang {
+            0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+            5% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(100); opacity: 0; }
+        }
+
+        /* 초대형 클로징 레이어 */
+        #final-phrase {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; justify-content: center; align-items: center;
+            z-index: 3000; background: var(--bg);
+            opacity: 0; visibility: hidden; transition: 2s ease;
+        }
+        #final-phrase.show { opacity: 1; visibility: visible; }
+        
+        .ghost-reset {
+            position: absolute; top: 30px; left: 30px;
+            padding: 10px 20px; color: rgba(255,255,255,0.15);
+            font-size: 0.7rem; border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 5px; cursor: pointer; transition: 0.5s;
+            text-transform: uppercase; letter-spacing: 2px;
+        }
+        .ghost-reset:hover { color: var(--special); border-color: var(--special); background: rgba(241, 196, 15, 0.1); opacity: 1; }
+
+        #final-phrase h2 {
+            font-size: 7rem; font-weight: 900; text-align: center;
+            background: linear-gradient(to bottom, #fff, var(--special));
+            -webkit-background-clip: text; background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 60px rgba(241, 196, 15, 0.4);
+            transform: scale(0.7); transition: 2.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+        #final-phrase.show h2 { transform: scale(1); }
+
+        .guide { position: fixed; bottom: 35px; width: 100%; text-align: center; color: var(--accent); font-size: 0.8rem; letter-spacing: 4px; z-index: 1000; text-transform: uppercase; }
+    </style>
+</head>
+<body>
+
+    <button class="back-btn" onclick="location.reload()">↺ SYSTEM RESET</button>
+    <audio id="bgm" loop><source src="your_epic_music.mp3" type="audio/mpeg"></audio>
+    <canvas id="neural-canvas"></canvas>
+    <div id="explosion"></div>
+
+    <div id="final-phrase">
+        <div class="ghost-reset" onclick="location.reload()">System Reset</div>
+        <h2>INTELLIGENT<br>LOGISTICS FUTURE</h2>
+    </div>
+
+    <div id="network-container">
+        <div class="neuron-node" id="n1" onclick="toggleNode(1)"><div class="node-info"><span class="node-num">01</span><span class="node-key">INGESTION</span></div><div class="node-content"><h1>Knowledge Ingestion</h1><p>`data_loader.py` 가동. 산재된 물류 지식 파편을 하나의 지능형 신경망으로 수집합니다.</p></div></div>
+        <div class="neuron-node" id="n2" onclick="toggleNode(2)"><div class="node-info"><span class="node-num">02</span><span class="node-key">EMBEDDING</span></div><div class="node-content"><h1>Atomic Embedding</h1><p>수집된 비정형 데이터를 AI가 즉시 이해할 수 있는 벡터 신호로 치환합니다.</p></div></div>
+        <div class="neuron-node" id="n3" onclick="toggleNode(3)"><div class="node-info"><span class="node-num">03</span><span class="node-key">STORAGE</span></div><div class="node-content"><h1>Neural Storage</h1><p>**Qdrant** 벡터 DB에 신경망 정보를 영구적으로 각인하여 고속 탐색을 준비합니다.</p></div></div>
+        <div class="neuron-node" id="n4" onclick="toggleNode(4)"><div class="node-info"><span class="node-num">04</span><span class="node-key">INTENT</span></div><div class="node-content"><h1>Intent Processing</h1><p>`query_processor.py`가 현장 담당자의 질문 속에 숨은 진정한 의도를 파악합니다.</p></div></div>
+        <div class="neuron-node" id="n5" onclick="toggleNode(5)"><div class="node-info"><span class="node-num">05</span><span class="node-key">RETRIEVAL</span></div><div class="node-content"><h1>Synaptic Retrieval</h1><p>수조 개의 데이터 뉴런 사이에서 단 0.1초 만에 최적의 근거 문서를 연결합니다.</p></div></div>
+        <div class="neuron-node" id="n6" onclick="toggleNode(6)"><div class="node-info"><span class="node-num">06</span><span class="node-key">REASONING</span></div><div class="node-content"><h1>Context Reasoning</h1><p>추출된 지식을 바탕으로 LLM이 가장 논리적이고 정밀한 답변을 설계합니다.</p></div></div>
+        <div class="neuron-node" id="n7" onclick="toggleNode(7)"><div class="node-info"><span class="node-num">07</span><span class="node-key">DEPLOY</span></div><div class="node-content"><h1>Field Deployment</h1><p>`app.py`를 통해 모든 결과가 현장의 최적화된 테마로 즉시 시각화됩니다.</p></div></div>
+        <div class="neuron-node" id="n8" onclick="specialClosingTrigger()"><div class="node-info"><span class="node-num">08</span><span class="node-key">PRECISION</span></div><div class="node-content"><h1>THE PRECISION</h1><p>LIKE 시스템이 도출한 단 하나의 해답.<br><b>물류 효율 25% 향상을 위한 정밀 의사결정이 완성되었습니다.</b></p></div></div>
+    </div>
+
+    <div class="guide">01번부터 순서대로 클릭하여 지능형 엔진을 활성화하세요</div>
+
+    <script>
+        const nodes = document.querySelectorAll('.neuron-node');
+        const bgm = document.getElementById('bgm');
+        const explosion = document.getElementById('explosion');
+        const finalPhrase = document.getElementById('final-phrase');
+        let activeNode = null;
+        let visitedSequence = [];
+
+        nodes.forEach((node, i) => {
+            const x = 15 + (i * 10); 
+            const y = 20 + Math.random() * 60;
+            node.style.left = `${x}%`;
+            node.style.top = `${y}%`;
+            node.dataset.origLeft = `${x}%`;
+            node.dataset.origTop = `${y}%`;
+        });
+
+        function toggleNode(num) {
+            const target = document.getElementById(`n${num}`);
+            if (bgm.paused) bgm.play();
+
+            if (activeNode === target) {
+                target.classList.remove('active');
+                target.style.left = target.dataset.origLeft;
+                target.style.top = target.dataset.origTop;
+                activeNode = null;
+            } else {
+                if (activeNode) {
+                    activeNode.classList.remove('active');
+                    activeNode.style.left = activeNode.dataset.origLeft;
+                    activeNode.style.top = activeNode.dataset.origTop;
+                }
+                target.classList.add('active', 'visited');
+                if (!visitedSequence.includes(num)) visitedSequence.push(num);
+                activeNode = target;
+                bgm.volume = Math.min(0.2 + (num * 0.1), 1.0);
+            }
+        }
+
+        let closingPhase = 0;
+        function specialClosingTrigger() {
+            if (closingPhase === 0) {
+                toggleNode(8);
+                closingPhase = 1;
+            } else if (closingPhase === 1) {
+                nodes.forEach(node => {
+                    node.style.left = '50%'; node.style.top = '50%';
+                    node.style.transform = 'translate(-50%, -50%) scale(0)';
+                    node.style.opacity = '0';
+                });
+                
+                setTimeout(() => {
+                    explosion.style.animation = 'bang 1.5s ease-out forwards';
+                    bgm.volume = 1.0;
+                }, 800);
+
+                setTimeout(() => {
+                    finalPhrase.classList.add('show');
+                }, 2000);
+                closingPhase = 2;
+            }
+        }
+
+        const canvas = document.getElementById('neural-canvas');
+        const ctx = canvas.getContext('2d');
+        function drawLines() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            nodes.forEach((n1, i) => {
+                nodes.forEach((n2, j) => {
+                    if (i < j) {
+                        const r1 = n1.getBoundingClientRect();
+                        const r2 = n2.getBoundingClientRect();
+                        const isNext = (j === i + 1);
+                        const isPathActive = visitedSequence.includes(i+1) && visitedSequence.includes(j+1);
+
+                        ctx.beginPath();
+                        ctx.moveTo(r1.left + r1.width/2, r1.top + r1.height/2);
+                        ctx.lineTo(r2.left + r2.width/2, r2.top + r2.height/2);
+
+                        if (isNext && isPathActive) {
+                            ctx.strokeStyle = (j === 7) ? 'rgba(241, 196, 15, 0.9)' : 'rgba(0, 242, 254, 0.9)';
+                            ctx.lineWidth = 5;
+                            ctx.shadowBlur = 20;
+                            ctx.shadowColor = ctx.strokeStyle;
+                        } else {
+                            ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+                            ctx.lineWidth = 1;
+                            ctx.shadowBlur = 0;
+                        }
+                        ctx.stroke();
+                    }
+                });
+            });
+            requestAnimationFrame(drawLines);
+        }
+        drawLines();
+    </script>
+</body>
+</html>

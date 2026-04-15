@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>LOGIBOT-DRB 3D Vision</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: #000; font-family: 'Pretendard', sans-serif; }
+        #canvas-container { width: 100vw; height: 100vh; }
+        
+        /* 팝업 카드 스타일 */
+        .info-card {
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.9);
+            width: 400px; background: rgba(10, 20, 40, 0.95); color: white;
+            padding: 30px; border-radius: 20px; border: 1px solid rgba(0, 242, 254, 0.3);
+            box-shadow: 0 0 50px rgba(0, 242, 254, 0.2);
+            opacity: 0; pointer-events: none; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 1000; backdrop-filter: blur(10px);
+        }
+        .info-card.active { opacity: 1; transform: translate(-50%, -50%) scale(1); pointer-events: all; }
+        .info-card h1 { font-size: 1.5rem; margin: 0 0 15px 0; color: var(--node-color); }
+        .info-card p { font-size: 1rem; line-height: 1.6; color: #cbd5e1; margin-bottom: 20px; }
+        .close-btn { position: absolute; top: 15px; right: 15px; cursor: pointer; color: #64748b; font-size: 1.2rem; }
+        
+        /* UI 요소 */
+        .instruction {
+            position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+            color: rgba(255,255,255,0.6); font-size: 0.9rem; pointer-events: none;
+        }
+        .logo {
+            position: fixed; top: 30px; left: 30px; color: #00f2fe; font-weight: bold; font-size: 1.2rem;
+            letter-spacing: 2px; text-shadow: 0 0 10px rgba(0,242,254,0.5);
+        }
+    </style>
+</head>
+<body>
+
+<div class="logo">LOGIBOT-DRB</div>
+<div id="canvas-container"></div>
+
+<div id="card" class="info-card">
+    <div class="close-btn" onclick="closeCard()">×</div>
+    <div id="card-content"></div>
+</div>
+
+<div class="instruction">마우스를 드래그하여 구체를 회전시키고, 빛나는 노드를 클릭하세요.</div>
+
+<script type="importmap">
+    {
+        "imports": {
+            "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+            "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+        }
+    }
+</script>
+
+<script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+    // 1. 초기화 및 씬 구성
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(window.devicePixelRatio);
+    document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+    // 2. 우주 배경 (별들)
+    const starGeometry = new THREE.BufferGeometry();
+    const starCount = 5000;
+    const starCoords = new Float32Array(starCount * 3);
+    for (let i = 0; i < starCount * 3; i++) {
+        starCoords[i] = (Math.random() - 0.5) * 1000;
+    }
+    starGeometry.setAttribute('position', new THREE.BufferAttribute(starCoords, 3));
+    const starMaterial = new THREE.PointsMaterial({ color: 0xffffff, size: 0.7 });
+    const stars = new THREE.Points(starGeometry, starMaterial);
+    scene.add(stars);
+
+    // 3. 지식 구체 (육각형 그리드 느낌의 와이어프레임)
+    const sphereGroup = new THREE.Group();
+    const sphereGeom = new THREE.IcosahedronGeometry(10, 2);
+    const sphereMat = new THREE.MeshBasicMaterial({ 
+        color: 0x00f2fe, wireframe: true, transparent: true, opacity: 0.15 
+    });
+    const mainSphere = new THREE.Mesh(sphereGeom, sphereMat);
+    sphereGroup.add(mainSphere);
+    scene.add(sphereGroup);
+
+    // 4. 10개의 인터랙티브 노드 데이터
+    const nodeData = [
+        { id: 1, title: "01. 조직의 자원", type: "crisis", color: 0xff6b6b, content: "조직의 가장 비싼 자원인 '사람의 시간'이 반복되는 질문에 소비되고 있습니다." },
+        { id: 2, title: "02. 지식 종속", type: "crisis", color: 0xff6b6b, content: "물류 노하우가 담당자의 머릿속에만 존재할 때, 조직의 시스템은 취약해집니다." },
+        { id: 3, title: "03. 구조적 한계", type: "crisis", color: 0xff6b6b, content: "전통적인 방식으로는 매일 쏟아지는 방대한 물류 데이터를 감당할 수 없습니다." },
+        { id: 4, title: "04. 사내 전용 AI", type: "primary", color: 0x00f2fe, content: "보안이 내재화된 온프레미스 LLM으로 외부 유출 없는 DRB만의 지능을 구축했습니다." },
+        { id: 5, title: "05. 지능형 검색", type: "primary", color: 0x00f2fe, content: "RAG 기술을 통해 질문하는 즉시 최적의 물류 답안을 사내 데이터에서 찾아냅니다." },
+        { id: 6, title: "06. 실전 운영", type: "primary", color: 0x00f2fe, content: "현재 국내외 영업팀에서 배차 시뮬레이션 및 운임 계산에 실제로 활용 중입니다." },
+        { id: 7, title: "07. 가치 혁신", type: "future", color: 0xc084fc, content: "단순 대응은 AI가 맡고, 사람은 판단과 전략적 관계 구축에 집중하는 문화를 만듭니다." },
+        { id: 8, title: "08. 시스템 통합", type: "future", color: 0xc084fc, content: "SAP 및 그룹웨어와 연동하여 실시간 데이터 기반의 전사적 의사결정을 지원합니다." },
+        { id: 9, title: "09. 지식 자산화", type: "future", color: 0xc084fc, content: "개인의 노하우가 조직의 영구적 자산이 되어 세대와 부서를 넘어 전승됩니다." },
+        { id: 10, title: "10. 미래 실현", type: "special", color: 0xf1c40f, content: "지금 이 순간, 로지봇은 DRB의 업무 방식을 혁신하며 실재하고 있습니다." }
+    ];
+
+    const nodes = [];
+    nodeData.forEach((data, i) => {
+        // 구체 표면에 노드 배치 (수학적 분포)
+        const phi = Math.acos(-1 + (2 * i) / nodeData.length);
+        const theta = Math.sqrt(nodeData.length * Math.PI) * phi;
+        
+        const nodeGeom = new THREE.SphereGeometry(0.5, 16, 16);
+        const nodeMat = new THREE.MeshBasicMaterial({ 
+            color: data.color,
+            transparent: true,
+            opacity: 0.8
+        });
+        const node = new THREE.Mesh(nodeGeom, nodeMat);
+        
+        node.position.set(
+            10 * Math.sin(phi) * Math.cos(theta),
+            10 * Math.sin(phi) * Math.sin(theta),
+            10 * Math.cos(phi)
+        );
+        
+        node.userData = data; // 데이터 주입
+        sphereGroup.add(node);
+        nodes.push(node);
+
+        // 노드 광원 효과(Sprite)
+        const spriteMat = new THREE.SpriteMaterial({
+            map: new THREE.TextureLoader().load('https://threejs.org/examples/textures/lensflare/lensflare0.png'),
+            color: data.color, transparent: true, opacity: 0.5, blending: THREE.AdditiveBlending
+        });
+        const sprite = new THREE.Sprite(spriteMat);
+        sprite.scale.set(2, 2, 1);
+        node.add(sprite);
+    });
+
+    // 5. 인터랙션 (마우스 클릭)
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+
+    window.addEventListener('click', (event) => {
+        mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+        mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+        raycaster.setFromCamera(mouse, camera);
+        const intersects = raycaster.intersectObjects(nodes);
+
+        if (intersects.length > 0) {
+            const data = intersects[0].object.userData;
+            showCard(data);
+        } else {
+            // 빈 공간 클릭 시 카드 닫기
+            if (event.target.id === 'canvas-container') closeCard();
+        }
+    });
+
+    // 6. 카드 제어 함수
+    window.showCard = function(data) {
+        const card = document.getElementById('card');
+        const content = document.getElementById('card-content');
+        card.style.setProperty('--node-color', '#' + data.color.toString(16).padStart(6, '0'));
+        content.innerHTML = `<h1>${data.title}</h1><p>${data.content}</p>`;
+        card.classList.add('active');
+    };
+
+    window.closeCard = function() {
+        document.getElementById('card').classList.remove('active');
+    };
+
+    // 7. 컨트롤 및 애니메이션
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.autoRotate = true;
+    controls.autoRotateSpeed = 0.5;
+    camera.position.z = 25;
+
+    function animate() {
+        requestAnimationFrame(animate);
+        stars.rotation.y += 0.0002;
+        sphereGroup.rotation.y += 0.001;
+        controls.update();
+        renderer.render(scene, camera);
+    }
+    animate();
+
+    // 리사이즈 대응
+    window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+</script>
+
+</body>
+</html>

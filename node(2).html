@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LOGIBOT-DRB: Neural Connection</title>
+    <style>
+        :root {
+            --bg: #00030a;
+            --primary: #00f2fe;
+            --accent: #4facfe;
+            --special: #f1c40f;
+            --node-bg: rgba(5, 10, 25, 0.95);
+            --transition: all 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+        }
+
+        body, html {
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            background-color: var(--bg); color: #fff;
+            font-family: 'Pretendard', -apple-system, sans-serif;
+            overflow: hidden;
+            background-image: radial-gradient(circle at center, #001529 0%, #00030a 100%);
+        }
+
+        canvas { position: fixed; top: 0; left: 0; z-index: 1; pointer-events: none; }
+
+        /* --- 상단 타이틀 --- */
+        .header {
+            position: fixed; top: 40px; width: 100%; text-align: center; z-index: 10;
+        }
+        .header h1 {
+            font-size: 1.2rem; letter-spacing: 5px; color: var(--primary);
+            text-transform: uppercase; margin: 0; opacity: 0.8;
+        }
+
+        /* --- 노드 컨테이너 --- */
+        .network-container {
+            position: relative; width: 100vw; height: 100vh;
+            display: flex; justify-content: center; align-items: center; z-index: 5;
+        }
+
+        .node {
+            position: absolute; width: 180px; height: 180px;
+            background: var(--node-bg); border: 1px solid rgba(0, 242, 254, 0.3);
+            border-radius: 50%; display: flex; flex-direction: column;
+            justify-content: center; align-items: center; text-align: center;
+            cursor: pointer; transition: var(--transition);
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5); padding: 20px;
+        }
+
+        .node:hover {
+            border-color: var(--primary); transform: scale(1.1);
+            box-shadow: 0 0 30px rgba(0, 242, 254, 0.2);
+        }
+
+        .node.active {
+            border-color: var(--primary);
+            box-shadow: 0 0 40px rgba(0, 242, 254, 0.4);
+            background: rgba(0, 242, 254, 0.1);
+        }
+
+        .node.special { border-color: var(--special); }
+        .node.special.active { box-shadow: 0 0 40px rgba(241, 196, 15, 0.4); }
+
+        .node-label { font-size: 0.7rem; color: var(--primary); margin-bottom: 8px; font-weight: bold; }
+        .node-title { font-size: 1rem; font-weight: 700; line-height: 1.3; }
+
+        /* --- 상세 설명 패널 --- */
+        #detail-panel {
+            position: fixed; bottom: 50px; left: 50%; transform: translateX(-50%);
+            width: 600px; background: rgba(0, 10, 20, 0.8);
+            border-left: 4px solid var(--primary); padding: 25px;
+            backdrop-filter: blur(10px); z-index: 100; opacity: 0; transition: 0.5s;
+        }
+        #detail-panel.show { opacity: 1; bottom: 80px; }
+        .detail-desc { font-size: 1.1rem; line-height: 1.6; color: #ced4da; }
+        .detail-tag { color: var(--primary); font-weight: bold; margin-bottom: 10px; display: block; }
+
+        /* --- 링크 버튼 --- */
+        .launch-btn {
+            display: inline-block; margin-top: 20px; padding: 12px 30px;
+            background: var(--special); color: #000; font-weight: bold;
+            text-decoration: none; border-radius: 5px; transition: 0.3s;
+        }
+        .launch-btn:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(241, 196, 15, 0.4); }
+
+        /* --- 배치 좌표 --- */
+        .n1 { top: 20%; left: 15%; }
+        .n2 { top: 50%; left: 10%; }
+        .n3 { top: 25%; left: 40%; }
+        .n4 { top: 50%; left: 45%; }
+        .n5 { top: 75%; left: 40%; }
+        .n6 { top: 50%; left: 75%; }
+        .n7 { top: 50%; left: 90%; width: 220px; height: 220px; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>Logicommunity: Neural Master Vision</h1>
+    </div>
+
+    <canvas id="canvas"></canvas>
+
+    <div class="network-container">
+        <div class="node n1" onclick="showDetail(1)">
+            <div class="node-label">PHASE 01</div>
+            <div class="node-title">THE GAP<br>데이터의 고립</div>
+        </div>
+
+        <div class="node n2" onclick="showDetail(2)">
+            <div class="node-label">PHASE 02</div>
+            <div class="node-title">THE BRAIN<br>RAG 지능형 엔진</div>
+        </div>
+
+        <div class="node n3" onclick="showDetail(3)">
+            <div class="node-label">NODE: OS</div>
+            <div class="node-title">해외영업<br>최적화</div>
+        </div>
+
+        <div class="node n4" onclick="showDetail(4)">
+            <div class="node-label">NODE: DT</div>
+            <div class="node-title">국내영업<br>매칭</div>
+        </div>
+
+        <div class="node n5" onclick="showDetail(5)">
+            <div class="node-label">NODE: TK</div>
+            <div class="node-title">트랙영업<br>시뮬레이션</div>
+        </div>
+
+        <div class="node n6" onclick="showDetail(6)">
+            <div class="node-label">PHASE 03</div>
+            <div class="node-title">THE CYCLE<br>지능의 선순환</div>
+        </div>
+
+        <div class="node n7 special" onclick="showDetail(7)">
+            <div class="node-label" style="color:var(--special)">FINAL PHASE</div>
+            <div class="node-title" style="font-size:1.3rem">LOGIBOT-DRB<br>현장 시연</div>
+        </div>
+    </div>
+
+    <div id="detail-panel">
+        <span class="detail-tag" id="panel-tag">SECTION INFO</span>
+        <div class="detail-desc" id="panel-desc">
+            노드를 클릭하여 물류 지능화 서사를 확인하세요.
+        </div>
+        <div id="link-area"></div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const nodes = document.querySelectorAll('.node');
+        const panel = document.getElementById('detail-panel');
+        const pTag = document.getElementById('panel-tag');
+        const pDesc = document.getElementById('panel-desc');
+        const lArea = document.getElementById('link-area');
+
+        const content = {
+            1: {
+                tag: "PROBLEM: THE DATA SILO",
+                desc: "파편화된 엑셀, 담당자의 머릿속에만 존재하는 노하우. 데이터는 넘쳐나지만 소통은 멈춰있습니다. 우리는 이 '고립'을 해결하는 것에서 시작했습니다.",
+            },
+            2: {
+                tag: "SOLUTION: THE NEURAL LINK",
+                desc: "단순한 챗봇이 아닙니다. 전사적 물류 지식을 RAG(검색 증강 생성) 기술로 엮어낸 거대한 신경망, Logibot-DRB의 탄생입니다.",
+            },
+            3: {
+                tag: "VALUE: OVERSEAS SALES",
+                desc: "복잡한 컨테이너 규격과 수출 포장 무게 계산, 이제 3초면 충분합니다. 영업의 언어를 물류의 수치로 즉시 번역합니다.",
+            },
+            4: {
+                tag: "VALUE: DOMESTIC SALES",
+                desc: "직송과 택배, 화물 운임의 실시간 비교 매핑. 최적의 물류 경로를 찾아 비용 절감과 업무 효율을 동시에 달성합니다.",
+            },
+            5: {
+                tag: "VALUE: TRACK SALES",
+                desc: "자재 코드 하나로 완성되는 배차 시뮬레이션. 크롤러의 규격을 자동으로 계산하여 최적의 차량 톤수를 추천합니다.",
+            },
+            6: {
+                tag: "PROCESS: INTELLIGENCE CYCLE",
+                desc: "사용자의 피드백이 쌓일수록 시스템은 스스로 진화합니다. 질문이 지혜가 되고, 지혜가 다시 정답이 되는 선순환 구조를 구축했습니다.",
+            },
+            7: {
+                tag: "CLOSING: BEYOND LOGISTICS",
+                desc: "Logibot은 단순히 질문에 답하는 도구가 아닙니다. 물류와 영업의 경계를 허물고 우리 모두를 하나의 지능으로 잇는 <b>LOGICOMMUNITY</b>의 시작입니다.",
+                link: true
+            }
+        };
+
+        function showDetail(id) {
+            nodes.forEach(n => n.classList.remove('active'));
+            document.querySelector(`.n${id}`).classList.add('active');
+            
+            panel.classList.remove('show');
+            setTimeout(() => {
+                pTag.innerText = content[id].tag;
+                pDesc.innerHTML = content[id].desc;
+                lArea.innerHTML = content[id].link ? 
+                    `<a href="https://your-logibot-link.streamlit.app" target="_blank" class="launch-btn">LOGIBOT-DRB 시작하기 →</a>` : "";
+                panel.classList.add('show');
+            }, 200);
+        }
+
+        function drawLines() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const activeNode = document.querySelector('.node.active');
+            
+            nodes.forEach((n1, i) => {
+                const r1 = n1.getBoundingClientRect();
+                const x1 = r1.left + r1.width/2;
+                const y1 = r1.top + r1.height/2;
+
+                nodes.forEach((n2, j) => {
+                    if (i < j) {
+                        const r2 = n2.getBoundingClientRect();
+                        const x2 = r2.left + r2.width/2;
+                        const y2 = r2.top + r2.height/2;
+
+                        const dist = Math.hypot(x2-x1, y2-y1);
+                        if (dist < 400) {
+                            ctx.beginPath();
+                            ctx.moveTo(x1, y1);
+                            ctx.lineTo(x2, y2);
+                            ctx.strokeStyle = (n1.classList.contains('active') || n2.classList.contains('active')) 
+                                ? 'rgba(0, 242, 254, 0.5)' : 'rgba(255, 255, 255, 0.05)';
+                            ctx.lineWidth = (n1.classList.contains('active') || n2.classList.contains('active')) ? 2 : 1;
+                            ctx.stroke();
+                        }
+                    }
+                });
+            });
+            requestAnimationFrame(drawLines);
+        }
+
+        window.addEventListener('resize', drawLines);
+        drawLines();
+    </script>
+</body>
+</html>
